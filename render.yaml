@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: sentinelview-backend
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    # CRITICAL: --workers 1 is mandatory. See README Known Limitations #1.
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT --workers 1
+    envVars:
+      - key: JWT_SECRET_KEY
+        sync: false          # set in Render dashboard, never in this file
+      - key: ALLOWED_USERNAME
+        sync: false
+      - key: ALLOWED_PASSWORD
+        sync: false
+      - key: FRONTEND_ORIGIN
+        sync: false
+      - key: DB_PATH
+        value: ./sentinel.db

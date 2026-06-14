@@ -1,0 +1,168 @@
+/* ============================================================
+   SentinelView — Global CSS
+   Design tokens, glassmorphism utilities, and base resets.
+   ============================================================ */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ---- Google Fonts (Inter loaded via next/font) ---- */
+
+:root {
+  /* Color palette */
+  --color-bg:           #020508;
+  --color-surface:      #080d14;
+  --color-panel:        rgba(255, 255, 255, 0.04);
+  --color-panel-border: rgba(255, 255, 255, 0.08);
+  --color-accent:       #00e5ff;
+  --color-accent-dim:   rgba(0, 229, 255, 0.15);
+  --color-danger:       #ff3b3b;
+  --color-danger-dim:   rgba(255, 59, 59, 0.15);
+  --color-warn:         #ff9500;
+  --color-warn-dim:     rgba(255, 149, 0, 0.15);
+  --color-low:          #34d399;
+  --color-low-dim:      rgba(52, 211, 153, 0.15);
+  --color-text:         #e2e8f0;
+  --color-muted:        #64748b;
+
+  /* Parallax scroll offset (updated by JS) */
+  --scroll-y: 0px;
+}
+
+/* ---- Base reset ---- */
+*, *::before, *::after { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-inter, 'Inter', sans-serif);
+  min-height: 100dvh;
+  overflow-x: hidden;
+}
+
+/* ---- Glassmorphism panel utility ---- */
+/* Apply ONLY to top-level containers, never inside CSS transforms */
+.glass-panel {
+  background: var(--color-panel);
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  border: 1px solid var(--color-panel-border);
+  border-radius: 16px;
+}
+
+/* ---- Confidence badge ---- */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  backdrop-filter: blur(8px);
+  border: 1px solid transparent;
+}
+
+.badge-high {
+  background: var(--color-danger-dim);
+  border-color: rgba(255, 59, 59, 0.35);
+  color: #ff6b6b;
+}
+
+.badge-medium {
+  background: var(--color-warn-dim);
+  border-color: rgba(255, 149, 0, 0.35);
+  color: #ffb347;
+}
+
+.badge-low {
+  background: var(--color-low-dim);
+  border-color: rgba(52, 211, 153, 0.35);
+  color: #6ee7b7;
+}
+
+/* ---- Threat type label ---- */
+.threat-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+
+/* ---- Pulse animation for HIGH confidence alerts ---- */
+@keyframes sentinel-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(255, 59, 59, 0.6); }
+  50%  { box-shadow: 0 0 0 10px rgba(255, 59, 59, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 59, 59, 0); }
+}
+
+.pulse-high {
+  animation: sentinel-pulse 1.4s ease-out 3;
+}
+
+/* ---- Scrollbar styling ---- */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+}
+
+/* ---- Login page parallax ---- */
+.parallax-bg {
+  transform: translateY(calc(var(--scroll-y) * 0.3));
+  will-change: transform;
+}
+
+.parallax-fg {
+  transform: translateY(calc(var(--scroll-y) * -0.08));
+  will-change: transform;
+}
+
+/* ---- Grid scan-line overlay ---- */
+.scanlines::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 229, 255, 0.015) 2px,
+    rgba(0, 229, 255, 0.015) 4px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* ---- Status dot ---- */
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.status-dot-connected  { background: #34d399; box-shadow: 0 0 6px #34d399; }
+.status-dot-connecting { background: #ffb347; box-shadow: 0 0 6px #ffb347; animation: blink 1s ease-in-out infinite; }
+.status-dot-error      { background: #ff6b6b; box-shadow: 0 0 6px #ff6b6b; }
+.status-dot-disconnected { background: var(--color-muted); }
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* ---- Gradient text ---- */
+.gradient-text {
+  background: linear-gradient(135deg, #00e5ff 0%, #7c3aed 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}

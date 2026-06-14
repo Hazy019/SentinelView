@@ -179,3 +179,35 @@ cython_debug/
 #  refer to https://docs.cursor.com/context/ignore-files
 .cursorignore
 .cursorindexingignore
+
+# =============================================================================
+# SentinelView — project-specific additions
+# =============================================================================
+
+# SQLite database — wiped on Render redeploy, must never be committed.
+sentinel.db
+sentinel.db-wal
+sentinel.db-shm
+*.db
+*.db-wal
+*.db-shm
+
+# Actual secrets — .env.example IS committed; .env is NOT.
+.env
+.env.local
+.env.*.local
+
+# Next.js build output
+frontend/.next/
+frontend/out/
+frontend/node_modules/
+
+# Python virtual environments (backend and generator)
+backend/.venv/
+backend/venv/
+generator/.venv/
+generator/venv/
+
+# OS artefacts
+Thumbs.db
+.DS_Store
