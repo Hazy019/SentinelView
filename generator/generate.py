@@ -153,8 +153,8 @@ def make_random_event() -> dict:
 async def send_event(client: httpx.AsyncClient, event: dict) -> None:
     try:
         resp = await client.post(INGEST_URL, json=event, timeout=5.0)
-        status_marker = "✓" if resp.status_code == 200 else f"✗{resp.status_code}"
-        print(f"[{status_marker}] {event['action']:8s} {event['source_ip']:20s} → {event['dest_ip']}")
+        status_marker = "OK" if resp.status_code == 200 else f"ERR {resp.status_code}"
+        print(f"[{status_marker}] {event['action']:8s} {event['source_ip']:20s} -> {event['dest_ip']}")
     except httpx.RequestError as exc:
         print(f"[ERR] Could not reach backend: {exc}")
 
@@ -169,6 +169,19 @@ async def run(rate: float, burst: bool) -> None:
     burst_counter = 0
 
     async with httpx.AsyncClient() as client:
+        # Fetch JWT token
+        login_resp = await client.post(
+            INGEST_URL.replace("/api/v1/ingest", "/auth/token"),
+            json={"username": "demo", "password": "demo123"},
+            timeout=5.0
+        )
+        if login_resp.status_code == 200:
+            token = login_resp.json()["access_token"]
+            client.headers.update({"Authorization": f"Bearer {token}"})
+        else:
+            print(f"[ERR] Failed to authenticate: {login_resp.status_code} - {login_resp.text}")
+            return
+
         print(f"SentinelView Generator — target: {INGEST_URL}")
         print(f"Rate: {rate} evt/s  |  Burst mode: {'ON' if burst else 'OFF'}")
         print("-" * 60)

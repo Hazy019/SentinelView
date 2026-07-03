@@ -55,15 +55,18 @@ export default function AlertCard({ alert, index }: AlertCardProps) {
         scale: 1.015,
         transition: { type: "spring", stiffness: 600, damping: 30 },
       }}
-      className={`glass-panel p-4 flex gap-4 items-start relative overflow-hidden cursor-default ${
+      className={`cyber-panel-rhyme p-4 flex gap-4 items-start relative overflow-hidden cursor-default ${
         isHigh ? "pulse-high" : ""
       }`}
       style={{
         borderColor: isHigh
-          ? "rgba(255,59,59,0.2)"
-          : "var(--color-panel-border)",
+          ? "rgba(255,59,59,0.3)"
+          : "rgba(255,255,255,0.08)",
       }}
     >
+      {/* Visual Rhyming Corner Markers */}
+      <span className="absolute top-1.5 right-2 text-[7px] text-white/20 font-mono select-none pointer-events-none">+</span>
+      
       {/* Left accent bar */}
       <div
         className="absolute left-0 top-0 bottom-0 w-0.5 rounded-full"
@@ -85,7 +88,7 @@ export default function AlertCard({ alert, index }: AlertCardProps) {
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap mb-1">
           <span
-            className="text-xs font-bold tracking-wider uppercase"
+            className="text-xs font-bold tracking-wider font-mono uppercase"
             style={{ color: THREAT_COLORS[alert.threat_type] }}
           >
             {alert.threat_type.replace("_", " ")}
@@ -96,17 +99,15 @@ export default function AlertCard({ alert, index }: AlertCardProps) {
         </div>
 
         <p
-          className="text-sm mb-2 leading-snug"
-          style={{ color: "var(--color-text)" }}
+          className="text-xs mb-2 leading-relaxed font-mono text-slate-300 op-medium"
         >
           {alert.detail}
         </p>
 
         <div
-          className="flex items-center gap-3 text-xs"
-          style={{ color: "var(--color-muted)" }}
+          className="flex items-center gap-3 text-[10px] font-mono text-slate-500 op-low"
         >
-          <span className="font-mono">{alert.source_ip}</span>
+          <span>{alert.source_ip}</span>
           <span>·</span>
           <span>{new Date(alert.timestamp).toLocaleTimeString()}</span>
         </div>

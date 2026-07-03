@@ -11,10 +11,12 @@
 
 import { useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { useAlerts } from "@/hooks/useAlerts";
 import AlertCard from "@/components/AlertCard";
 import ThreatGlobe from "@/components/ThreatGlobe";
+import DashboardTour from "@/components/DashboardTour";
 import { AnimatePresence, motion } from "framer-motion";
 
 export default function DashboardPage() {
@@ -44,29 +46,41 @@ export default function DashboardPage() {
   if (!isAuthenticated) return null;
 
   return (
-    <div className="min-h-screen flex flex-col overflow-hidden bg-[var(--color-bg)]">
+    <div className="h-screen flex flex-col overflow-hidden bg-[var(--color-bg)] cyber-grid-overlay">
+      {/* Help tour modal portal overlay */}
+      <DashboardTour />
+
       {/* Top Navigation */}
-      <header className="glass-panel mx-4 mt-4 px-6 py-3 flex justify-between items-center z-20">
+      <header id="tour-header" className="cyber-panel-rhyme mx-4 mt-4 px-6 py-3 flex justify-between items-center z-20">
+        <span className="absolute top-1.5 left-3 text-[8px] text-cyan-400/35 font-mono select-none pointer-events-none">+</span>
+        <span className="absolute bottom-1.5 right-3 text-[8px] text-cyan-400/35 font-mono select-none pointer-events-none">+</span>
+
         <div className="flex items-center gap-4">
-          <h1 className="font-bold text-lg tracking-wide">
+          <h1 className="font-bold text-lg tracking-wider font-mono uppercase">
             <span className="gradient-text">Sentinel</span>
-            <span className="text-white">View</span>
+            <span className="text-white">_View</span>
           </h1>
-          <div className="h-4 w-px bg-[var(--color-panel-border)]" />
-          <div className="flex items-center gap-2 text-xs text-[var(--color-muted)] font-mono uppercase">
+          <div className="h-4 w-px bg-[var(--color-panel-border)] op-decor" />
+          <div className="flex items-center gap-2 text-xs text-[var(--color-muted)] font-mono uppercase tracking-widest op-medium">
             <div className={`status-dot status-dot-${wsStatus}`} />
             {wsStatus}
           </div>
         </div>
         <div className="flex items-center gap-4">
-          <span className="text-xs text-[var(--color-muted)] uppercase tracking-wider">
-            Analyst: <span className="text-white font-medium">{username}</span>
+          <span className="text-[10px] text-[var(--color-muted)] uppercase tracking-wider tracking-wider font-mono op-medium">
+            Analyst: <span className="text-white font-medium op-high">{username}</span>
           </span>
+          <Link
+            href="/docs"
+            className="text-[10px] uppercase font-mono tracking-widest px-3 py-1.5 rounded-md border border-cyan-500/20 text-cyan-400 hover:border-cyan-400 hover:bg-cyan-950/20 transition-all duration-300"
+          >
+            Docs
+          </Link>
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={logout}
-            className="text-xs px-3 py-1.5 rounded-md border border-[var(--color-panel-border)] hover:bg-[var(--color-panel)] transition-colors"
+            className="text-[10px] uppercase font-mono tracking-widest px-3 py-1.5 rounded-md border border-[var(--color-panel-border)] hover:bg-[var(--color-panel)] transition-colors"
           >
             Disconnect
           </motion.button>
@@ -80,32 +94,41 @@ export default function DashboardPage() {
         <div className="lg:col-span-2 flex flex-col gap-4 min-h-0">
           
           {/* Stats HUD (Phase 7) */}
-          <div className="grid grid-cols-3 gap-4 shrink-0">
-            <div className="glass-panel p-4 flex flex-col justify-center">
-              <span className="text-xs text-[var(--color-muted)] uppercase tracking-wider mb-1">Total Alerts</span>
-              <span className="text-3xl font-mono text-white">{stats.total}</span>
+          <div id="tour-stats" className="grid grid-cols-3 gap-4 shrink-0">
+            <div className="cyber-panel-rhyme p-4 flex flex-col justify-center relative">
+              <span className="absolute top-1.5 left-2 text-[7px] text-cyan-400/20 font-mono select-none pointer-events-none">+</span>
+              <span className="text-[10px] text-[var(--color-muted)] font-mono uppercase tracking-widest mb-1 op-medium">Total Alerts</span>
+              <span className="text-3xl font-mono text-white op-high">{stats.total}</span>
             </div>
-            <div className="glass-panel p-4 flex flex-col justify-center">
-              <span className="text-xs text-[var(--color-danger)] uppercase tracking-wider mb-1">High Confidence</span>
-              <span className="text-3xl font-mono text-[var(--color-danger)] drop-shadow-[0_0_8px_rgba(255,59,59,0.5)]">
+            
+            <div className="cyber-panel-rhyme p-4 flex flex-col justify-center relative">
+              <span className="absolute top-1.5 left-2 text-[7px] text-cyan-400/20 font-mono select-none pointer-events-none">+</span>
+              <span className="text-[10px] text-[var(--color-danger)] font-mono uppercase tracking-widest mb-1 op-high">High Confidence</span>
+              <span className="text-3xl font-mono text-[var(--color-danger)] drop-shadow-[0_0_8px_rgba(255,59,59,0.5)] op-high">
                 {stats.high}
               </span>
             </div>
-            <div className="glass-panel p-4 flex flex-col justify-center">
-              <span className="text-xs text-[var(--color-accent)] uppercase tracking-wider mb-1">Unique Source IPs</span>
-              <span className="text-3xl font-mono text-[var(--color-accent)]">{stats.uniqueIps}</span>
+
+            <div className="cyber-panel-rhyme p-4 flex flex-col justify-center relative">
+              <span className="absolute top-1.5 left-2 text-[7px] text-cyan-400/20 font-mono select-none pointer-events-none">+</span>
+              <span className="text-[10px] text-[var(--color-accent)] font-mono uppercase tracking-widest mb-1 op-medium">Unique Source IPs</span>
+              <span className="text-3xl font-mono text-[var(--color-accent)] op-high">{stats.uniqueIps}</span>
             </div>
           </div>
 
           {/* 3D Globe Container (Phase 8) */}
-          <div className="glass-panel flex-1 relative overflow-hidden flex items-center justify-center min-h-[300px]">
+          <div id="tour-globe" className="cyber-panel-rhyme flex-1 relative overflow-hidden flex items-center justify-center min-h-[300px]">
+            {/* Visual Rhyming Corner Labels */}
+            <span className="absolute top-3 left-4 text-[9px] text-cyan-400/30 font-mono select-none pointer-events-none">[ORBIT_DETECTOR_ACTIVE]</span>
+            <span className="absolute top-3 right-4 text-[9px] text-cyan-400/30 font-mono select-none pointer-events-none">GRID: WAL_3D</span>
+
             {/* Fallback skeleton while connecting/loading */}
             {wsStatus === "connecting" && alerts.length === 0 && (
               <div className="absolute inset-0 flex items-center justify-center bg-[var(--color-bg)] z-10">
                 <motion.div
                   animate={{ opacity: [0.3, 1, 0.3] }}
                   transition={{ repeat: Infinity, duration: 1.5 }}
-                  className="text-[var(--color-accent)] font-mono text-sm tracking-widest"
+                  className="text-[var(--color-accent)] font-mono text-xs tracking-widest"
                 >
                   INITIALISING ORBITAL VIEW...
                 </motion.div>
@@ -116,9 +139,12 @@ export default function DashboardPage() {
         </div>
 
         {/* Right Column: Alert Feed (Phase 7) */}
-        <div className="glass-panel flex flex-col min-h-0 overflow-hidden">
-          <div className="p-4 border-b border-[var(--color-panel-border)] shrink-0 flex justify-between items-center bg-[var(--color-panel)]">
-            <h2 className="font-bold text-sm uppercase tracking-widest text-[var(--color-muted)]">Live Alert Feed</h2>
+        <div id="tour-feed" className="cyber-panel-rhyme flex flex-col min-h-0 overflow-hidden relative">
+          <span className="absolute top-1.5 left-3 text-[8px] text-cyan-400/20 font-mono select-none pointer-events-none">+</span>
+          <span className="absolute bottom-1.5 right-3 text-[8px] text-cyan-400/20 font-mono select-none pointer-events-none">+</span>
+
+          <div className="p-4 border-b border-[var(--color-panel-border)] shrink-0 flex justify-between items-center bg-[rgba(8,13,20,0.4)]">
+            <h2 className="font-bold text-xs uppercase tracking-widest font-mono text-[var(--color-muted)] op-medium">Live Alert Feed</h2>
             <div className="flex items-center gap-2">
               <span className="relative flex h-2 w-2">
                 {wsStatus === "connected" && (
@@ -135,7 +161,7 @@ export default function DashboardPage() {
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className="text-center text-xs text-[var(--color-muted)] mt-10 font-mono"
+                  className="text-center text-xs text-[var(--color-muted)] mt-10 font-mono op-low"
                 >
                   Listening for network anomalies...
                 </motion.div>
