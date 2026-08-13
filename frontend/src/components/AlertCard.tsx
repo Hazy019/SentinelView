@@ -1,11 +1,5 @@
 /**
- * AlertCard — single alert entry with Framer Motion microinteractions.
- *
- * Animation rules (Phase 9):
- * - All cards: slide-in from right + fade, spring physics.
- * - HIGH confidence ONLY: aggressive pulse ring animation.
- * - LOW/MEDIUM: subtle entrance only, no pulse.
- * - whileHover on the card container for depth lift effect.
+ * AlertCard — Light-mode SOC threat item with thin severity border, HUD brackets, and monospace telemetry typography.
  */
 
 "use client";
@@ -25,15 +19,9 @@ const THREAT_ICONS: Record<Alert["threat_type"], string> = {
 };
 
 const THREAT_COLORS: Record<Alert["threat_type"], string> = {
-  BRUTE_FORCE: "#ff6b6b",
-  PORT_SCAN: "#ffb347",
-  DATA_EXFIL: "#00e5ff",
-};
-
-const CONFIDENCE_CLASS: Record<Alert["confidence"], string> = {
-  HIGH: "badge-high",
-  MEDIUM: "badge-medium",
-  LOW: "badge-low",
+  BRUTE_FORCE: "#EF4444",
+  PORT_SCAN: "#F59E0B",
+  DATA_EXFIL: "#2563EB",
 };
 
 export default function AlertCard({ alert, index }: AlertCardProps) {
@@ -42,43 +30,30 @@ export default function AlertCard({ alert, index }: AlertCardProps) {
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, x: 60, scale: 0.96 }}
-      animate={{ opacity: 1, x: 0, scale: 1 }}
-      exit={{ opacity: 0, x: -30, scale: 0.95 }}
+      initial={{ opacity: 0, x: 24, y: 8 }}
+      animate={{ opacity: 1, x: 0, y: 0 }}
+      exit={{ opacity: 0, x: -16 }}
       transition={{
         type: "spring",
-        stiffness: 400,
-        damping: 30,
-        delay: Math.min(index * 0.04, 0.3),
+        stiffness: 350,
+        damping: 28,
+        delay: Math.min(index * 0.02, 0.2),
       }}
       whileHover={{
-        scale: 1.015,
-        transition: { type: "spring", stiffness: 600, damping: 30 },
+        y: -1,
+        transition: { duration: 0.15 },
       }}
-      className={`cyber-panel-rhyme p-4 flex gap-4 items-start relative overflow-hidden cursor-default ${
-        isHigh ? "pulse-high" : ""
-      }`}
+      className="bento-card hud-bracket p-4 flex gap-3.5 items-start relative overflow-hidden bg-white border border-slate-900/[0.07] rounded-xl shadow-sm"
       style={{
-        borderColor: isHigh
-          ? "rgba(255,59,59,0.3)"
-          : "rgba(255,255,255,0.08)",
+        borderLeft: `3px solid ${THREAT_COLORS[alert.threat_type]}`,
       }}
     >
-      {/* Visual Rhyming Corner Markers */}
-      <span className="absolute top-1.5 right-2 text-[7px] text-white/20 font-mono select-none pointer-events-none">+</span>
-      
-      {/* Left accent bar */}
+      {/* Icon Capsule */}
       <div
-        className="absolute left-0 top-0 bottom-0 w-0.5 rounded-full"
-        style={{ background: THREAT_COLORS[alert.threat_type] }}
-      />
-
-      {/* Icon */}
-      <div
-        className="w-9 h-9 rounded-xl flex items-center justify-center text-lg flex-shrink-0"
+        className="w-9 h-9 rounded-lg flex items-center justify-center text-base flex-shrink-0"
         style={{
-          background: `color-mix(in srgb, ${THREAT_COLORS[alert.threat_type]} 15%, transparent)`,
-          border: `1px solid color-mix(in srgb, ${THREAT_COLORS[alert.threat_type]} 25%, transparent)`,
+          background: `color-mix(in srgb, ${THREAT_COLORS[alert.threat_type]} 8%, #FFFFFF)`,
+          border: `1px solid color-mix(in srgb, ${THREAT_COLORS[alert.threat_type]} 18%, transparent)`,
         }}
       >
         {THREAT_ICONS[alert.threat_type]}
@@ -86,32 +61,48 @@ export default function AlertCard({ alert, index }: AlertCardProps) {
 
       {/* Content */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 flex-wrap mb-1">
-          <span
-            className="text-xs font-bold tracking-wider font-mono uppercase"
-            style={{ color: THREAT_COLORS[alert.threat_type] }}
-          >
-            {alert.threat_type.replace("_", " ")}
-          </span>
-          <span className={`badge ${CONFIDENCE_CLASS[alert.confidence]}`}>
-            {alert.confidence}
-          </span>
+        <div className="flex items-center justify-between gap-2 mb-1">
+          <div className="flex items-center gap-2">
+            <span
+              className="text-xs font-bold tracking-wider font-mono uppercase"
+              style={{ color: THREAT_COLORS[alert.threat_type] }}
+            >
+              {alert.threat_type.replace("_", " ")}
+            </span>
+            <span
+              className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold tracking-wider uppercase ${
+                isHigh
+                  ? "bg-red-50 text-red-600 border border-red-200"
+                  : "bg-amber-50 text-amber-700 border border-amber-200"
+              }`}
+            >
+              {alert.confidence}
+            </span>
+          </div>
+
+          {/* Active Radar Ping Dot for HIGH Confidence */}
+          {isHigh && (
+            <span className="ping-dot" title="Active High Severity Threat">
+              <span className="ping-dot-ring bg-red-500" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
+            </span>
+          )}
         </div>
 
-        <p
-          className="text-xs mb-2 leading-relaxed font-mono text-slate-300 op-medium"
-        >
+        <p className="text-xs mb-2 leading-relaxed font-sans text-slate-800 font-medium">
           {alert.detail}
         </p>
 
-        <div
-          className="flex items-center gap-3 text-[10px] font-mono text-slate-500 op-low"
-        >
-          <span>{alert.source_ip}</span>
-          <span>·</span>
+        <div className="flex items-center gap-2.5 text-[11px] font-mono text-slate-500">
+          <span className="font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded">
+            {alert.source_ip}
+          </span>
+          <span className="text-slate-300">·</span>
           <span>{new Date(alert.timestamp).toLocaleTimeString()}</span>
         </div>
       </div>
     </motion.div>
   );
 }
+
+

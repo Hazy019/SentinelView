@@ -5,54 +5,62 @@ import Link from "next/link";
 
 export default function DocsPage() {
   return (
-    <main className="scanlines min-h-screen bg-[var(--color-bg)] cyber-grid-overlay text-slate-300 font-mono p-6 md:p-12 relative overflow-y-auto">
+    <main className="min-h-screen bg-[#F8F9FC] text-[#0F172A] font-sans p-6 md:p-12 relative overflow-y-auto mesh-canvas">
       {/* Background Glow */}
       <div
-        className="absolute inset-0 pointer-events-none select-none z-0"
+        className="fixed inset-0 pointer-events-none select-none z-0"
         aria-hidden
         style={{
           background:
-            "radial-gradient(circle at 50% 10%, rgba(0, 229, 255, 0.05) 0%, transparent 60%)",
+            "radial-gradient(circle at 50% 10%, rgba(37, 99, 235, 0.05) 0%, transparent 60%)",
         }}
       />
 
       <div className="relative z-10 max-w-4xl mx-auto flex flex-col gap-8">
         
         {/* Header Navigation */}
-        <div className="flex justify-between items-center pb-4 border-b border-white/10">
-          <h1 className="text-xl font-bold uppercase tracking-wider text-white">
-            <span className="gradient-text">Sentinel</span>_View // Documentation
-          </h1>
+        <div className="flex justify-between items-center pb-4 border-b border-slate-200">
+          <div className="flex items-center gap-3">
+            <img
+              src="/SentinelView_logo.png"
+              alt="SentinelView Logo"
+              className="w-8 h-8 object-contain rounded-md"
+            />
+            <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 font-sans">
+              Sentinel<span className="text-[#2563EB]">_View</span>
+              <span className="font-display italic font-normal text-slate-500 text-lg ml-2">{"// Documentation"}</span>
+            </h1>
+          </div>
           <Link
-            href="/"
-            className="text-xs px-3 py-1.5 rounded border border-cyan-500/20 hover:border-cyan-400 text-cyan-400 hover:bg-cyan-950/20 transition-all duration-300 uppercase tracking-widest"
+            href="/dashboard"
+            className="text-xs font-bold px-4 py-2 rounded-xl bg-slate-900 text-white hover:bg-slate-800 transition-all shadow-sm uppercase tracking-wider font-sans"
           >
             ← Console
           </Link>
         </div>
 
+
         {/* Introduction */}
         <motion.section
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="cyber-panel-rhyme p-6 md:p-8"
+          className="bento-card p-6 md:p-8 bg-white border border-slate-900/[0.06] rounded-2xl shadow-lg shadow-slate-200/50"
         >
-          <span className="absolute top-2 left-2 text-[8px] text-cyan-500/30 font-mono select-none pointer-events-none">+</span>
-          <h2 className="text-sm font-bold uppercase tracking-widest text-cyan-400 mb-4">
+          <h2 className="text-xs font-extrabold uppercase tracking-widest text-blue-600 mb-3 font-mono">
             01. System Abstract
           </h2>
-          <p className="text-xs leading-relaxed op-medium mb-4">
+          <p className="text-sm leading-relaxed text-slate-600 mb-4 font-sans">
             SentinelView is a real-time cybersecurity threat visualiser designed as a portfolio platform. 
             It models log packet flows, processes them against an active deterministic security rules engine, 
             and maps threat alerts onto a WebGL 3D Attack Globe.
           </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6 text-[11px] text-slate-400">
-            <div className="p-3 bg-white/5 rounded border border-white/5">
-              <span className="font-bold text-white uppercase block mb-1">Objective</span>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6 text-xs text-slate-600">
+            <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+              <span className="font-bold text-slate-900 uppercase block mb-1 font-mono">Objective</span>
               Provide high-frequency, real-time cyber situational awareness through visually rich, 3D spatial representations.
             </div>
-            <div className="p-3 bg-white/5 rounded border border-white/5">
-              <span className="font-bold text-white uppercase block mb-1">Target Audience</span>
+            <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+              <span className="font-bold text-slate-900 uppercase block mb-1 font-mono">Target Audience</span>
               Security operations center (SOC) analysts, visual presenters, and technical portfolio reviewers.
             </div>
           </div>
@@ -63,35 +71,34 @@ export default function DocsPage() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="cyber-panel-rhyme p-6 md:p-8"
+          className="bento-card p-6 md:p-8 bg-white border border-slate-900/[0.06] rounded-2xl shadow-lg shadow-slate-200/50"
         >
-          <span className="absolute top-2 left-2 text-[8px] text-cyan-500/30 font-mono select-none pointer-events-none">+</span>
-          <h2 className="text-sm font-bold uppercase tracking-widest text-cyan-400 mb-4">
+          <h2 className="text-xs font-extrabold uppercase tracking-widest text-blue-600 mb-3 font-mono">
             02. Detection Signatures (Rules Engine)
           </h2>
-          <p className="text-xs leading-relaxed op-medium mb-6">
+          <p className="text-sm leading-relaxed text-slate-600 mb-6 font-sans">
             The backend engine processes streaming logs against three core deterministic signatures using sliding time windows:
           </p>
 
           <div className="space-y-4">
-            <div className="p-4 border-l-2 border-[var(--color-danger)] bg-[var(--color-danger-dim)] rounded-r">
-              <h3 className="font-bold text-xs uppercase text-white font-mono mb-1">🔒 Brute Force Storms</h3>
-              <p className="text-[11px] leading-relaxed text-slate-300">
-                Triggered when a single source IP generates **6 or more failed LOGIN actions (HTTP 401)** within a rolling **10-second window**. Evaluates to MEDIUM confidence initially, ascending to HIGH if the storm persists.
+            <div className="p-4 border-l-4 border-red-500 bg-red-50/60 rounded-r-xl">
+              <h3 className="font-bold text-xs uppercase text-red-700 font-mono mb-1">🔒 Brute Force Storms</h3>
+              <p className="text-xs leading-relaxed text-slate-700 font-sans">
+                Triggered when a single source IP generates <strong>6 or more failed LOGIN actions (HTTP 401)</strong> within a rolling <strong>10-second window</strong>. Evaluates to MEDIUM confidence initially, ascending to HIGH if the storm persists.
               </p>
             </div>
 
-            <div className="p-4 border-l-2 border-[var(--color-warn)] bg-[var(--color-warn-dim)] rounded-r">
-              <h3 className="font-bold text-xs uppercase text-white font-mono mb-1">🌐 Port Scan Reconnaissance</h3>
-              <p className="text-[11px] leading-relaxed text-slate-300">
-                Triggered when a single source IP initiates requests to **12 or more distinct destination IPs** within a rolling **5-second window**. Indicates system scanning.
+            <div className="p-4 border-l-4 border-amber-500 bg-amber-50/60 rounded-r-xl">
+              <h3 className="font-bold text-xs uppercase text-amber-700 font-mono mb-1">🌐 Port Scan Reconnaissance</h3>
+              <p className="text-xs leading-relaxed text-slate-700 font-sans">
+                Triggered when a single source IP initiates requests to <strong>12 or more distinct destination IPs</strong> within a rolling <strong>5-second window</strong>. Indicates system scanning.
               </p>
             </div>
 
-            <div className="p-4 border-l-2 border-[var(--color-accent)] bg-[var(--color-accent-dim)] rounded-r">
-              <h3 className="font-bold text-xs uppercase text-white font-mono mb-1">📤 Data Exfiltration</h3>
-              <p className="text-[11px] leading-relaxed text-slate-300">
-                Triggered on any single **TRANSFER action** where the payload size (`bytes_sent`) exceeds **10,000,000 bytes (10MB)**. Flagged instantly on occurrence.
+            <div className="p-4 border-l-4 border-blue-500 bg-blue-50/60 rounded-r-xl">
+              <h3 className="font-bold text-xs uppercase text-blue-700 font-mono mb-1">📤 Data Exfiltration</h3>
+              <p className="text-xs leading-relaxed text-slate-700 font-sans">
+                Triggered on any single <strong>TRANSFER action</strong> where the payload size (<code>bytes_sent</code>) exceeds <strong>10,000,000 bytes (10MB)</strong>. Flagged instantly on occurrence.
               </p>
             </div>
           </div>
@@ -102,39 +109,38 @@ export default function DocsPage() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="cyber-panel-rhyme p-6 md:p-8"
+          className="bento-card p-6 md:p-8 bg-white border border-slate-900/[0.06] rounded-2xl shadow-lg shadow-slate-200/50"
         >
-          <span className="absolute top-2 left-2 text-[8px] text-cyan-500/30 font-mono select-none pointer-events-none">+</span>
-          <h2 className="text-sm font-bold uppercase tracking-widest text-cyan-400 mb-4">
+          <h2 className="text-xs font-extrabold uppercase tracking-widest text-blue-600 mb-3 font-mono">
             03. System Architecture & Tech Stack
           </h2>
           
-          <div className="space-y-4 text-xs">
-            <div className="flex justify-between border-b border-white/5 pb-2">
-              <span className="font-bold text-white uppercase">Frontend</span>
-              <span>Next.js 14, React Three Fiber (WebGL), TailwindCSS, Framer Motion</span>
+          <div className="space-y-3.5 text-xs font-sans">
+            <div className="flex justify-between border-b border-slate-100 pb-2">
+              <span className="font-bold text-slate-900 uppercase font-mono">Frontend</span>
+              <span className="text-slate-600 font-medium">Next.js 14, React Three Fiber (WebGL), TailwindCSS, Framer Motion</span>
             </div>
-            <div className="flex justify-between border-b border-white/5 pb-2">
-              <span className="font-bold text-white uppercase">Backend REST API</span>
-              <span>FastAPI (Python), Uvicorn Server, Pydantic Schema Validation</span>
+            <div className="flex justify-between border-b border-slate-100 pb-2">
+              <span className="font-bold text-slate-900 uppercase font-mono">Backend REST API</span>
+              <span className="text-slate-600 font-medium">FastAPI (Python), Uvicorn Server, Pydantic Schema Validation</span>
             </div>
-            <div className="flex justify-between border-b border-white/5 pb-2">
-              <span className="font-bold text-white uppercase">Database Layer</span>
-              <span>aiosqlite (SQLite) in WAL mode, async batch write-queue</span>
+            <div className="flex justify-between border-b border-slate-100 pb-2">
+              <span className="font-bold text-slate-900 uppercase font-mono">Database Layer</span>
+              <span className="text-slate-600 font-medium">aiosqlite (SQLite) in WAL mode, async batch write-queue</span>
             </div>
-            <div className="flex justify-between border-b border-white/5 pb-2">
-              <span className="font-bold text-white uppercase">Real-time Ingest</span>
-              <span>WebSockets (client-server) & HTTP REST (generator-server)</span>
+            <div className="flex justify-between border-b border-slate-100 pb-2">
+              <span className="font-bold text-slate-900 uppercase font-mono">Real-time Ingest</span>
+              <span className="text-slate-600 font-medium">WebSockets (client-server) & HTTP REST (generator-server)</span>
             </div>
           </div>
 
-          <div className="mt-6 p-4 rounded bg-[#05090f] border border-white/5 text-[10px] text-slate-400 font-mono">
-            <span className="text-cyan-400 font-bold block mb-2">{"// DATA PIPELINE FLOW"}</span>
+          <div className="mt-6 p-4 rounded-xl bg-slate-900 text-slate-100 text-xs font-mono">
+            <span className="text-blue-400 font-bold block mb-2">{"// DATA PIPELINE FLOW"}</span>
             {"[Generator App] --(HTTP POST Logs)--> [FastAPI /ingest] --(WS Push)--> [Next.js Client]"}
                                                        |
                                             {"(Enqueues Write)"}
                                                        {"v"}
-                                            {"[SQLite Database WAL]"}
+                                             {"[SQLite Database WAL]"}
           </div>
         </motion.section>
 
@@ -143,35 +149,35 @@ export default function DocsPage() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="cyber-panel-rhyme p-6 md:p-8 border border-red-500/20"
+          className="bento-card p-6 md:p-8 bg-white border border-red-200/80 rounded-2xl shadow-lg shadow-slate-200/50"
         >
-          <span className="absolute top-2 left-2 text-[8px] text-red-500/30 font-mono select-none pointer-events-none">+</span>
-          <h2 className="text-sm font-bold uppercase tracking-widest text-red-400 mb-4">
+          <h2 className="text-xs font-extrabold uppercase tracking-widest text-red-600 mb-3 font-mono">
             04. Constraints & Architectural Limitations
           </h2>
           
-          <ul className="list-disc list-inside space-y-3 text-xs leading-relaxed op-medium text-slate-300">
+          <ul className="list-disc list-inside space-y-3 text-xs leading-relaxed text-slate-600 font-sans">
             <li>
-              <strong className="text-white">Single-Worker Constraint:</strong> The backend MUST run with exactly 1 Uvicorn worker. Sliding-window states and WebSocket mappings are kept in process-memory; horizontal scaling is currently unsupported.
+              <strong className="text-slate-900">Single-Worker Constraint:</strong> The backend MUST run with exactly 1 Uvicorn worker. Sliding-window states and WebSocket mappings are kept in process-memory; horizontal scaling is currently unsupported.
             </li>
             <li>
-              <strong className="text-white">Ephemeral Storage:</strong> The local SQLite WAL database files persist only within active container lifespans. Redeployments will reset logs and alert histories unless mounted onto a persistent cloud storage block.
+              <strong className="text-slate-900">Ephemeral Storage:</strong> The local SQLite WAL database files persist only within active container lifespans. Redeployments will reset logs and alert histories unless mounted onto a persistent cloud storage block.
             </li>
             <li>
-              <strong className="text-white">Deterministic Rules:</strong> Threat classification utilizes hardcoded logic thresholds—there are no machine learning (ML) or heuristic engines in this version.
+              <strong className="text-slate-900">Deterministic Rules:</strong> Threat classification utilizes hardcoded logic thresholds—there are no machine learning (ML) or heuristic engines in this version.
             </li>
             <li>
-              <strong className="text-white">Session Lifetime:</strong> Session tokens are held strictly in browser client memory for anti-backdoor protection, meaning reloads will require logging in again.
+              <strong className="text-slate-900">Session Lifetime:</strong> Session tokens are held strictly in browser client memory for anti-backdoor protection, meaning reloads will require logging in again.
             </li>
           </ul>
         </motion.section>
 
         {/* Footer */}
-        <footer className="text-center py-6 text-[10px] text-slate-600 op-low">
-          SentinelView Documentation Console · Portfolio abstract · Generated July 2026.
+        <footer className="text-center py-6 text-xs text-slate-500 font-sans">
+          SentinelView Documentation Console · Portfolio abstract.
         </footer>
 
       </div>
     </main>
   );
 }
+

@@ -19,19 +19,19 @@ const THREAT_CARDS = [
     icon: "🔒",
     name: "Brute Force",
     desc: "Detects repeated failed login storms from a single source IP within a 10-second sliding window.",
-    color: "var(--color-danger)",
+    color: "#EF4444",
   },
   {
     icon: "🌐",
     name: "Port Scan",
     desc: "Flags rapid reconnaissance across 10+ distinct internal destinations within 5 seconds.",
-    color: "var(--color-warn)",
+    color: "#F59E0B",
   },
   {
     icon: "📤",
     name: "Data Exfil",
     desc: "Catches abnormally large single-transfer events exceeding 10MB thresholds.",
-    color: "var(--color-accent)",
+    color: "#2563EB",
   },
 ];
 
@@ -94,18 +94,6 @@ export default function LoginPage() {
     return () => clearInterval(interval);
   }, []);
 
-  /* Parallax — passive scroll listener updates CSS custom property */
-  useEffect(() => {
-    const onScroll = () => {
-      document.documentElement.style.setProperty(
-        "--scroll-y",
-        `${window.scrollY}px`
-      );
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
   /* Redirect if already authenticated */
   useEffect(() => {
     if (isAuthenticated) router.replace("/dashboard");
@@ -134,12 +122,11 @@ export default function LoginPage() {
     return () => obs.disconnect();
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleLoginSubmit = async (u: string, p: string) => {
     setError("");
     setLoading(true);
     try {
-      await login(username, password);
+      await login(u, p);
       router.push("/dashboard");
     } catch (err: unknown) {
       const msg =
@@ -151,87 +138,97 @@ export default function LoginPage() {
     }
   };
 
-  return (
-    <main className="scanlines min-h-screen relative overflow-x-hidden bg-[var(--color-bg)] cyber-grid-overlay">
-      {/* ── Parallax background grid ── */}
-      <div
-        className="parallax-bg fixed inset-0 pointer-events-none select-none z-0"
-        aria-hidden
-      >
-        {/* Radial accent glow */}
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              "radial-gradient(ellipse 80% 60% at 50% 0%, rgba(0,229,255,0.06) 0%, transparent 70%)",
-          }}
-        />
-      </div>
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    handleLoginSubmit(username, password);
+  };
 
-      {/* ── Split-Screen Hero & Login Section ── */}
-      <section className="relative z-10 flex flex-col lg:flex-row items-center justify-center min-h-screen max-w-7xl mx-auto px-6 py-16 gap-12 lg:gap-20">
+  const handleDemoAccess = () => {
+    setUsername("demo");
+    setPassword("demo123");
+    handleLoginSubmit("demo", "demo123");
+  };
+
+  return (
+    <main className="min-h-screen relative overflow-x-hidden bg-[#FAFAF8] text-[#111318] hero-gradient-mesh">
+      {/* ── Split-Screen Hero & Login Bento Section ── */}
+      <section className="relative z-10 flex flex-col lg:flex-row items-center justify-center min-h-screen max-w-7xl mx-auto px-6 py-12 gap-10 lg:gap-14">
         
-        {/* Left Pane: Interactive Globe & Cyber Terminal Trace */}
+        {/* Left Pane: Hero Title & 3D Attack Globe Bento Stage ("Star of the Show") */}
         <div className="flex-1 w-full flex flex-col gap-6 items-start text-left">
           <motion.div
-            initial={{ opacity: 0, y: -20 }}
+            initial={{ opacity: 0, y: -16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
+            transition={{ duration: 0.5 }}
+            className="flex items-center gap-3"
           >
-            <span className="badge badge-high text-xs px-3 py-1 font-mono uppercase tracking-widest">
-              ⚡ LIVE TELEMETRY DEPLOYED
+            <img
+              src="/SentinelView_logo.png"
+              alt="SentinelView Threat Intelligence Platform Logo"
+              className="w-10 h-10 object-contain rounded-xl shadow-sm border border-slate-200/80 bg-white p-1"
+            />
+            <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-mono font-semibold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-sm">
+              <span className="ping-dot">
+                <span className="ping-dot-ring bg-emerald-500" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+              </span>
+              REAL-TIME TELEMETRY NODE READY
             </span>
           </motion.div>
 
           <motion.h1
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.1 }}
-            className="text-4xl md:text-6xl lg:text-7xl font-extrabold tracking-tight mb-2 leading-none text-white font-mono uppercase"
+            transition={{ duration: 0.6, delay: 0.1 }}
+            className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight leading-[1.08] text-[#111318] font-sans"
           >
-            <span className="gradient-text">Sentinel</span>_View
+            Sentinel<span className="text-[#2563EB]">_View</span>
+            <span className="block text-2xl sm:text-3xl md:text-4xl font-display italic text-slate-600 font-normal mt-2">
+              Designed for Real-Time Threat Intelligence.
+            </span>
           </motion.h1>
 
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.25 }}
-            className="text-sm md:text-base max-w-xl leading-relaxed mb-6 font-mono text-[var(--color-muted)] op-medium"
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="text-sm md:text-base max-w-xl leading-relaxed text-slate-600 font-sans"
           >
-            Real-time cybersecurity threat visualiser. Detect brute-force
-            storms, port scans, and data exfiltration as they happen — rendered
-            on a live 3D attack globe.
+            Monitor high-frequency network anomalies, detect brute-force storms, port scans, and data exfiltrations — visually mapped live onto a translucent 3D attack globe.
           </motion.p>
 
-          {/* Interactive Globe Frame (Star of the Show) */}
+          {/* Interactive Globe Bento Stage (>60% Visual Real Estate) */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.96 }}
+            initial={{ opacity: 0, scale: 0.97 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.8, delay: 0.3 }}
-            className="cyber-panel-rhyme w-full aspect-video min-h-[320px] max-h-[460px] relative overflow-hidden flex items-center justify-center p-1 border border-cyan-500/10 shadow-2xl shadow-cyan-950/20"
+            transition={{ duration: 0.7, delay: 0.3 }}
+            className="bento-card hud-bracket w-full aspect-video min-h-[360px] max-h-[480px] relative overflow-hidden flex items-center justify-center p-2 bg-white/90 backdrop-blur-xl border border-slate-900/[0.07] rounded-2xl shadow-layered"
           >
-            {/* Visual Rhyming Corner Labels */}
-            <span className="absolute top-3 left-4 text-[9px] text-cyan-400/40 font-mono select-none pointer-events-none">[SYS_GRID_OK]</span>
-            <span className="absolute top-3 right-4 text-[9px] text-cyan-400/40 font-mono select-none pointer-events-none">LATENCY: &lt; 50ms</span>
+            <span className="absolute top-3 left-4 text-[10px] text-slate-400 font-mono select-none pointer-events-none font-medium">
+              [SYSTEM_GRID_ONLINE]
+            </span>
+            <span className="absolute top-3 right-4 text-[10px] text-[#2563EB] font-mono select-none pointer-events-none font-semibold">
+              LATENCY &lt; 50ms
+            </span>
 
             {/* Earth Canvas */}
             <div className="absolute inset-0 z-0">
               <ThreatGlobe activeIps={mockIps} />
             </div>
 
-            {/* Live Terminal Log Stream Overlay (Tangible bridge) */}
-            <div className="absolute bottom-4 left-4 right-4 z-10 pointer-events-none p-4 rounded-lg bg-[#05090f]/80 border border-white/5 backdrop-blur-md max-h-[110px] overflow-hidden flex flex-col gap-1.5 font-mono text-[10px] text-emerald-400/90 shadow-lg">
-              <div className="flex justify-between items-center pb-1 border-b border-white/5 mb-1 text-slate-500">
-                <span className="text-[9px] tracking-wider uppercase font-semibold">Live Traffic Simulation Stream</span>
-                <span className="flex items-center gap-1.5 text-[9px] text-emerald-500">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  STANDBY
+            {/* Live Terminal Log Stream Overlay */}
+            <div className="absolute bottom-4 left-4 right-4 z-10 pointer-events-none p-3.5 rounded-xl bg-slate-900/90 text-slate-100 border border-slate-800 backdrop-blur-md max-h-[110px] overflow-hidden flex flex-col gap-1.5 font-mono text-[10px] shadow-2xl">
+              <div className="flex justify-between items-center pb-1 border-b border-slate-800 mb-0.5 text-slate-400">
+                <span className="text-[9px] tracking-wider uppercase font-semibold text-slate-300">Live Telemetry Log Stream</span>
+                <span className="flex items-center gap-1.5 text-[9px] text-emerald-400">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  INGEST ACTIVE
                 </span>
               </div>
-              <div className="flex flex-col gap-0.5 overflow-hidden">
+              <div className="flex flex-col gap-0.5 overflow-hidden font-mono text-emerald-300/90">
                 {mockLogs.map((log, i) => (
-                  <div key={i} className="truncate select-none opacity-90 transition-all duration-300">
-                    &gt; {log}
+                  <div key={i} className="log-typing-line truncate select-none">
+                    {log}
                   </div>
                 ))}
               </div>
@@ -239,29 +236,53 @@ export default function LoginPage() {
           </motion.div>
         </div>
 
-        {/* Right Pane: Login Card */}
-        <div className="w-full lg:w-[400px] flex flex-col justify-center relative">
+        {/* Right Pane: Light Analyst Login Bento Card */}
+        <div className="w-full lg:w-[420px] flex flex-col justify-center relative">
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            initial={{ opacity: 0, scale: 0.96, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
-            className="cyber-panel-rhyme w-full p-8"
+            transition={{ duration: 0.6, delay: 0.35 }}
+            className="bento-card hud-bracket w-full p-8 bg-white border border-slate-900/[0.07] rounded-2xl shadow-layered"
           >
-            {/* Visual Rhyming Corner Crosshairs */}
-            <span className="absolute top-3 left-4 text-[9px] text-purple-400/40 font-mono select-none pointer-events-none">+</span>
-            <span className="absolute top-3 right-4 text-[9px] text-purple-400/40 font-mono select-none pointer-events-none">+</span>
-            <span className="absolute bottom-3 left-4 text-[9px] text-purple-400/40 font-mono select-none pointer-events-none">+</span>
-            <span className="absolute bottom-3 right-4 text-[9px] text-purple-400/40 font-mono select-none pointer-events-none">+</span>
+            <div className="text-center mb-6 flex flex-col items-center">
+              <img
+                src="/SentinelView_logo.png"
+                alt="SentinelView Logo"
+                className="w-12 h-12 object-contain mb-3 rounded-xl p-1.5 border border-slate-200/80 bg-blue-50/50 shadow-sm"
+              />
+              <h2 className="text-2xl font-bold text-slate-900 font-sans tracking-tight">
+                Analyst Console Access
+              </h2>
+              <p className="text-xs text-slate-500 mt-1 font-sans">
+                Launch the live 3D threat monitoring workspace
+              </p>
+            </div>
 
-            <h2 className="text-xl font-bold mb-6 text-white font-mono text-center tracking-wider uppercase">
-              Analyst Login
-            </h2>
+
+            {/* Quick Demo Analyst Access Button (UX Requirement 3.8) */}
+            <motion.button
+              type="button"
+              onClick={handleDemoAccess}
+              disabled={loading}
+              whileHover={{ scale: 1.015 }}
+              whileTap={{ scale: 0.985 }}
+              className="w-full mb-5 py-3 rounded-xl font-bold text-xs uppercase tracking-wider font-sans bg-blue-50 text-[#2563EB] border border-blue-200 hover:bg-blue-100 transition-all flex items-center justify-center gap-2 shadow-sm"
+            >
+              <span>⚡</span>
+              <span>Try Demo Analyst Access (Instant)</span>
+            </motion.button>
+
+            <div className="relative flex py-2 items-center mb-4">
+              <div className="flex-grow border-t border-slate-200"></div>
+              <span className="flex-shrink mx-3 text-[10px] font-mono text-slate-400 uppercase tracking-widest">Or enter credentials</span>
+              <div className="flex-grow border-t border-slate-200"></div>
+            </div>
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
               <div className="flex flex-col gap-1.5">
                 <label
                   htmlFor="username"
-                  className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-muted)] font-mono"
+                  className="text-xs font-bold uppercase tracking-wider text-slate-600 font-sans"
                 >
                   Username
                 </label>
@@ -271,26 +292,16 @@ export default function LoginPage() {
                   autoComplete="username"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
+                  placeholder="demo"
                   required
-                  className="rounded-lg px-4 py-3 text-sm outline-none transition-all font-mono"
-                  style={{
-                    background: "rgba(255,255,255,0.04)",
-                    border: "1px solid rgba(255,255,255,0.08)",
-                    color: "var(--color-text)",
-                  }}
-                  onFocus={(e) =>
-                    (e.currentTarget.style.borderColor = "rgba(0,229,255,0.5)")
-                  }
-                  onBlur={(e) =>
-                    (e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)")
-                  }
+                  className="rounded-xl px-4 py-3 text-sm outline-none transition-all font-mono bg-slate-50 border border-slate-200 text-slate-900 focus:bg-white focus:border-[#2563EB] focus:ring-2 focus:ring-blue-100"
                 />
               </div>
 
               <div className="flex flex-col gap-1.5">
                 <label
                   htmlFor="password"
-                  className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-muted)] font-mono"
+                  className="text-xs font-bold uppercase tracking-wider text-slate-600 font-sans"
                 >
                   Password
                 </label>
@@ -300,19 +311,9 @@ export default function LoginPage() {
                   autoComplete="current-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
                   required
-                  className="rounded-lg px-4 py-3 text-sm outline-none transition-all font-mono"
-                  style={{
-                    background: "rgba(255,255,255,0.04)",
-                    border: "1px solid rgba(255,255,255,0.08)",
-                    color: "var(--color-text)",
-                  }}
-                  onFocus={(e) =>
-                    (e.currentTarget.style.borderColor = "rgba(0,229,255,0.5)")
-                  }
-                  onBlur={(e) =>
-                    (e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)")
-                  }
+                  className="rounded-xl px-4 py-3 text-sm outline-none transition-all font-mono bg-slate-50 border border-slate-200 text-slate-900 focus:bg-white focus:border-[#2563EB] focus:ring-2 focus:ring-blue-100"
                 />
               </div>
 
@@ -323,11 +324,7 @@ export default function LoginPage() {
                     initial={{ opacity: 0, y: -6 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0 }}
-                    className="text-xs rounded-lg px-3 py-2 font-mono"
-                    style={{
-                      background: "var(--color-danger-dim)",
-                      color: "#ff6b6b",
-                    }}
+                    className="text-xs rounded-xl px-3.5 py-2.5 font-sans bg-red-50 border border-red-200 text-red-600 font-semibold"
                   >
                     {error}
                   </motion.p>
@@ -338,59 +335,46 @@ export default function LoginPage() {
                 id="login-submit"
                 type="submit"
                 disabled={loading}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="mt-2 rounded-lg py-3 font-bold text-sm tracking-widest font-mono transition-opacity disabled:opacity-50 uppercase"
-                style={{
-                  background:
-                    "linear-gradient(135deg, #00e5ff 0%, #7c3aed 100%)",
-                  color: "#000",
-                }}
+                whileHover={{ scale: 1.015 }}
+                whileTap={{ scale: 0.985 }}
+                className="mt-1 rounded-xl py-3.5 font-bold text-xs tracking-wider font-sans transition-all disabled:opacity-50 uppercase text-white bg-[#2563EB] hover:bg-blue-700 shadow-md shadow-blue-500/20"
               >
-                {loading ? "Authenticating…" : "Access System →"}
+                {loading ? "Authenticating…" : "Access Console →"}
               </motion.button>
             </form>
-
-            <p className="mt-4 text-[10px] text-center font-mono text-slate-500 op-low">
-              Session lives in memory only — refresh to clear.
-            </p>
           </motion.div>
         </div>
       </section>
 
-      {/* ── Scrollytelling: Stats ── */}
+      {/* ── Platform Features Bento Section ── */}
       <section
         ref={statsRef}
-        className="relative z-10 py-24 px-6 border-t border-white/5 bg-[#03060b]/40 backdrop-blur-sm"
+        className="relative z-10 py-20 px-6 border-t border-slate-900/[0.06] bg-white/70 backdrop-blur-md"
         aria-label="Platform statistics"
       >
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-5xl mx-auto">
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
             animate={statsVisible ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.6 }}
-            className="text-center text-2xl md:text-3xl font-bold font-mono tracking-wider mb-12 text-white uppercase"
+            className="text-center text-3xl font-extrabold font-sans text-slate-900 tracking-tight mb-10"
           >
-            Built for <span className="gradient-text">Speed & Integrity</span>
+            Engineered for <span className="font-display italic text-[#2563EB] font-normal text-4xl">Sub-50ms Detection</span>
           </motion.h2>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
             {STATS.map((stat, i) => (
               <motion.div
                 key={stat.label}
-                className="cyber-panel-rhyme p-6 text-center"
-                initial={{ opacity: 0, y: 30 }}
+                className="bento-card p-6 text-center bg-white rounded-2xl border border-slate-900/[0.06] shadow-sm"
+                initial={{ opacity: 0, y: 24 }}
                 animate={statsVisible ? { opacity: 1, y: 0 } : {}}
                 transition={{ duration: 0.5, delay: i * 0.1 }}
               >
-                {/* Visual Rhyming ticks on stats cards */}
-                <span className="absolute top-2 left-2 text-[8px] text-cyan-400/20 font-mono select-none pointer-events-none">+</span>
-                <span className="absolute bottom-2 right-2 text-[8px] text-cyan-400/20 font-mono select-none pointer-events-none">+</span>
-
-                <div className="text-2xl md:text-3xl font-black mb-1 gradient-text font-mono">
+                <div className="text-3xl font-bold mb-1.5 text-[#2563EB] font-mono">
                   {stat.value}
                 </div>
-                <div className="text-[10px] font-bold tracking-widest font-mono uppercase text-slate-400 op-medium">
+                <div className="text-xs font-bold tracking-wider font-sans uppercase text-slate-500">
                   {stat.label}
                 </div>
               </motion.div>
@@ -399,44 +383,37 @@ export default function LoginPage() {
         </div>
       </section>
 
-      {/* ── Scrollytelling: Threat types ── */}
+      {/* ── Threat Signatures Cards ── */}
       <section
         ref={threatsRef}
-        className="relative z-10 py-24 px-6 border-t border-white/5"
+        className="relative z-10 py-20 px-6"
         aria-label="Threat detection capabilities"
       >
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-5xl mx-auto">
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
             animate={threatsVisible ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.6 }}
-            className="text-center text-2xl md:text-3xl font-bold font-mono tracking-wider mb-12 text-white uppercase"
+            className="text-center text-3xl font-extrabold font-sans text-slate-900 tracking-tight mb-12"
           >
-            Anomalous <span className="gradient-text">Signatures</span>
+            Deterministic <span className="font-display italic text-[#2563EB] font-normal text-4xl">Anomaly Signatures</span>
           </motion.h2>
 
           <div className="grid md:grid-cols-3 gap-6">
             {THREAT_CARDS.map((card, i) => (
               <motion.div
                 key={card.name}
-                className="cyber-panel-rhyme p-6 flex flex-col gap-3"
+                className="bento-card hud-bracket p-6 flex flex-col gap-3.5 bg-white rounded-2xl border border-slate-900/[0.06] shadow-layered"
                 initial={{ opacity: 0, x: -20 }}
                 animate={threatsVisible ? { opacity: 1, x: 0 } : {}}
                 transition={{ duration: 0.5, delay: i * 0.15 }}
                 whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
               >
-                {/* Visual Rhyming ticks on threat cards */}
-                <span className="absolute top-2 left-2 text-[8px] text-cyan-400/20 font-mono select-none pointer-events-none">+</span>
-                <span className="absolute bottom-2 right-2 text-[8px] text-cyan-400/20 font-mono select-none pointer-events-none">+</span>
-
                 <span className="text-3xl">{card.icon}</span>
-                <h3
-                  className="font-bold text-sm font-mono tracking-widest uppercase"
-                  style={{ color: card.color }}
-                >
+                <h3 className="font-bold text-xs font-sans tracking-wider uppercase text-slate-900">
                   {card.name}
                 </h3>
-                <p className="text-xs leading-relaxed font-mono text-slate-400 op-medium">
+                <p className="text-xs leading-relaxed font-sans text-slate-600">
                   {card.desc}
                 </p>
               </motion.div>
@@ -446,10 +423,11 @@ export default function LoginPage() {
       </section>
 
       {/* Footer */}
-      <footer className="relative z-10 text-center py-12 border-t border-white/5 text-[10px] font-mono text-slate-500 op-low bg-[#020508]">
-        SentinelView — Portfolio project · All traffic is synthetically
-        generated · No real systems are monitored.
+      <footer className="relative z-10 text-center py-10 border-t border-slate-900/[0.06] text-xs font-sans text-slate-500 bg-white">
+        SentinelView — Cybersecurity Threat Intelligence Portfolio Demonstration.
       </footer>
     </main>
   );
 }
+
+

@@ -135,7 +135,7 @@ export default function DashboardTour() {
       {/* Floating Tutorial Help Button */}
       <button
         onClick={startTour}
-        className="fixed bottom-4 right-4 z-50 w-10 h-10 rounded-full border border-cyan-500/20 bg-slate-950/80 text-cyan-400 font-mono font-bold text-sm flex items-center justify-center shadow-lg hover:border-cyan-400/50 hover:bg-cyan-950/20 transition-all duration-300"
+        className="fixed bottom-5 right-5 z-50 w-11 h-11 rounded-full border border-slate-200 bg-white text-blue-600 font-sans font-bold text-base flex items-center justify-center shadow-xl hover:bg-blue-50 hover:border-blue-300 transition-all duration-300"
         title="Start Interactive Tutorial Tour"
       >
         ?
@@ -145,8 +145,8 @@ export default function DashboardTour() {
       <AnimatePresence>
         {isOpen && (
           <div className="fixed inset-0 z-[999] pointer-events-none">
-            {/* Dark focus mask overlay */}
-            <div className="absolute inset-0 bg-black/40 pointer-events-auto" onClick={finishTour} />
+            {/* Soft focus mask overlay */}
+            <div className="absolute inset-0 bg-slate-900/30 backdrop-blur-xs pointer-events-auto" onClick={finishTour} />
 
             {/* Instruction Box */}
             <motion.div
@@ -154,36 +154,32 @@ export default function DashboardTour() {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
               style={boxStyle}
-              className="cyber-panel-rhyme p-5 pointer-events-auto bg-slate-950/95 border border-cyan-500/30 text-white font-mono shadow-2xl"
+              className="bento-card p-5 pointer-events-auto bg-white/95 backdrop-blur-xl border border-slate-900/[0.08] text-slate-900 font-sans shadow-2xl rounded-2xl"
             >
-              {/* Corner markings */}
-              <span className="absolute top-2 left-2 text-[8px] text-cyan-500/30 select-none pointer-events-none">+</span>
-              <span className="absolute top-2 right-2 text-[8px] text-cyan-500/30 select-none pointer-events-none">+</span>
-
-              <h3 className="text-xs font-bold uppercase tracking-widest text-cyan-400 mb-2">
+              <h3 className="text-xs font-extrabold uppercase tracking-wider text-blue-600 mb-2 font-mono">
                 {TOUR_STEPS[currentStep].title}
               </h3>
-              <p className="text-[11px] leading-relaxed text-slate-300 mb-4 op-medium">
+              <p className="text-xs leading-relaxed text-slate-600 mb-4 font-sans">
                 {TOUR_STEPS[currentStep].description}
               </p>
 
-              <div className="flex justify-between items-center text-[10px]">
-                <span className="text-slate-500 font-mono">
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-slate-400 font-mono font-medium">
                   {currentStep + 1} / {TOUR_STEPS.length}
                 </span>
 
-                <div className="flex gap-2">
+                <div className="flex gap-2 font-sans font-bold">
                   {currentStep > 0 && (
                     <button
                       onClick={handleBack}
-                      className="px-2 py-1 border border-white/10 hover:border-white/20 transition-colors"
+                      className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors"
                     >
                       Back
                     </button>
                   )}
                   <button
                     onClick={handleNext}
-                    className="px-3 py-1 border border-cyan-400/40 text-cyan-400 hover:bg-cyan-950/30 transition-colors"
+                    className="px-3.5 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-sm"
                   >
                     {currentStep === TOUR_STEPS.length - 1 ? "Finish" : "Next"}
                   </button>
@@ -196,3 +192,4 @@ export default function DashboardTour() {
     </>
   );
 }
+
