@@ -167,20 +167,26 @@ async def run(rate: float, burst: bool) -> None:
     """
     interval = 1.0 / rate
     burst_counter = 0
+    api_key = os.getenv("INGEST_API_KEY")
 
     async with httpx.AsyncClient() as client:
-        # Fetch JWT token
-        login_resp = await client.post(
-            INGEST_URL.replace("/api/v1/ingest", "/auth/token"),
-            json={"username": "demo", "password": "demo123"},
-            timeout=5.0
-        )
-        if login_resp.status_code == 200:
-            token = login_resp.json()["access_token"]
-            client.headers.update({"Authorization": f"Bearer {token}"})
+        if api_key:
+            client.headers.update({"X-API-Key": api_key})
+            print(f"[AUTH] Using static INGEST_API_KEY from environment.")
         else:
-            print(f"[ERR] Failed to authenticate: {login_resp.status_code} - {login_resp.text}")
-            return
+            # Fetch JWT token
+            login_resp = await client.post(
+                INGEST_URL.replace("/api/v1/ingest", "/auth/token"),
+                json={"username": "demo", "password": "demo123"},
+                timeout=5.0
+            )
+            if login_resp.status_code == 200:
+                token = login_resp.json()["access_token"]
+                client.headers.update({"Authorization": f"Bearer {token}"})
+                print(f"[AUTH] JWT access token obtained.")
+            else:
+                print(f"[ERR] Failed to authenticate: {login_resp.status_code} - {login_resp.text}")
+                return
 
         print(f"SentinelView Generator — target: {INGEST_URL}")
         print(f"Rate: {rate} evt/s  |  Burst mode: {'ON' if burst else 'OFF'}")

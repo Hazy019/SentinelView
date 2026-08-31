@@ -8,7 +8,7 @@ Payload Schema. All code MUST import from here — never redefine inline.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Literal
 
@@ -70,6 +70,16 @@ class LogEvent(BaseModel):
     bytes_sent: int = Field(..., ge=0)
 
 
+class BatchLogEventRequest(BaseModel):
+    events: list[LogEvent] = Field(..., min_length=1, max_length=500)
+
+
+class BatchIngestResponse(BaseModel):
+    status: str = "ok"
+    events_processed: int
+    alerts_generated: int
+
+
 # ---------------------------------------------------------------------------
 # Alert Payload Schema (Backend → WebSocket → Frontend)
 # IMPORTANT: never include raw log lines or full event history.
@@ -77,7 +87,7 @@ class LogEvent(BaseModel):
 
 class AlertPayload(BaseModel):
     alert_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     source_ip: str
     threat_type: ThreatType
     confidence: Confidence

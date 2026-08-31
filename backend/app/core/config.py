@@ -29,6 +29,12 @@ class Settings(BaseSettings):
     # SQLite
     db_path: str = "./sentinel.db"
 
+    # Ingestion API Key (optional — allows external services/log forwarders to ingest without interactive JWT)
+    ingest_api_key: str | None = None
+
+    # Outbound Alert Webhook (optional — forwards alerts to external URLs like Discord, Slack, SOAR)
+    alert_webhook_url: str | None = None
+
     # Logging
     log_level: str = "INFO"
 

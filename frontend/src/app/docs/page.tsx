@@ -144,36 +144,81 @@ export default function DocsPage() {
           </div>
         </motion.section>
 
+        {/* External Integration & Ingestion API */}
+        <motion.section
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
+          className="bento-card p-6 md:p-8 bg-white border border-blue-200/80 rounded-2xl shadow-lg shadow-slate-200/50"
+        >
+          <h2 className="text-xs font-extrabold uppercase tracking-widest text-[#2563EB] mb-3 font-mono">
+            04. External Integrations & Ingestion API
+          </h2>
+          <p className="text-sm leading-relaxed text-slate-600 mb-6 font-sans">
+            SentinelView can easily ingest live traffic and security events from any external website, server, API gateway, or log shipper:
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-sans">
+            <div className="p-4 bg-slate-50 rounded-xl border border-slate-200/70">
+              <span className="font-bold text-slate-900 uppercase font-mono block mb-1">⚡ Single & Batch REST Ingest</span>
+              <p className="text-slate-600 leading-relaxed">
+                External services send logs to <code>POST /api/v1/ingest</code> or bulk arrays up to 500 events to <code>POST /api/v1/ingest/batch</code>. Authenticated via JWT or static <code>X-API-Key</code> header.
+              </p>
+            </div>
+
+            <div className="p-4 bg-slate-50 rounded-xl border border-slate-200/70">
+              <span className="font-bold text-slate-900 uppercase font-mono block mb-1">🔔 Outbound Webhooks</span>
+              <p className="text-slate-600 leading-relaxed">
+                Configure <code>ALERT_WEBHOOK_URL</code> in backend <code>.env</code> to automatically push incident JSON payloads to Slack, Discord, PagerDuty, or SOAR playbooks.
+              </p>
+            </div>
+
+            <div className="p-4 bg-slate-50 rounded-xl border border-slate-200/70">
+              <span className="font-bold text-slate-900 uppercase font-mono block mb-1">📦 Log Shippers (Vector / Fluent Bit)</span>
+              <p className="text-slate-600 leading-relaxed">
+                Ship live NGINX, HAProxy, Envoy, or Kubernetes Ingress access logs directly into the SentinelView ingestion pipeline.
+              </p>
+            </div>
+
+            <div className="p-4 bg-slate-50 rounded-xl border border-slate-200/70">
+              <span className="font-bold text-slate-900 uppercase font-mono block mb-1">🌐 Iframe & SOC Wallboard Embed</span>
+              <p className="text-slate-600 leading-relaxed">
+                Embed the live 3D threat radar and HUD metrics into executive wallboards, enterprise security portals, or public trust centers.
+              </p>
+            </div>
+          </div>
+        </motion.section>
+
         {/* Limitations */}
         <motion.section
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
+          transition={{ delay: 0.35 }}
           className="bento-card p-6 md:p-8 bg-white border border-red-200/80 rounded-2xl shadow-lg shadow-slate-200/50"
         >
           <h2 className="text-xs font-extrabold uppercase tracking-widest text-red-600 mb-3 font-mono">
-            04. Constraints & Architectural Limitations
+            05. Constraints & Architectural Considerations
           </h2>
           
           <ul className="list-disc list-inside space-y-3 text-xs leading-relaxed text-slate-600 font-sans">
             <li>
-              <strong className="text-slate-900">Single-Worker Constraint:</strong> The backend MUST run with exactly 1 Uvicorn worker. Sliding-window states and WebSocket mappings are kept in process-memory; horizontal scaling is currently unsupported.
+              <strong className="text-slate-900">Single-Worker Constraint:</strong> The backend runs with 1 Uvicorn worker to maintain lock-free in-memory sliding window state for low-latency rule evaluation.
             </li>
             <li>
-              <strong className="text-slate-900">Ephemeral Storage:</strong> The local SQLite WAL database files persist only within active container lifespans. Redeployments will reset logs and alert histories unless mounted onto a persistent cloud storage block.
+              <strong className="text-slate-900">Ephemeral Storage:</strong> The local SQLite WAL database file persists across container restarts but resets on fresh cloud redeployments unless mounted to a persistent volume.
             </li>
             <li>
-              <strong className="text-slate-900">Deterministic Rules:</strong> Threat classification utilizes hardcoded logic thresholds—there are no machine learning (ML) or heuristic engines in this version.
+              <strong className="text-slate-900">Deterministic Rules:</strong> Threat classification utilizes deterministic mathematical window thresholds with 100% explainability and zero probabilistic hallucinations.
             </li>
             <li>
-              <strong className="text-slate-900">Session Lifetime:</strong> Session tokens are held strictly in browser client memory for anti-backdoor protection, meaning reloads will require logging in again.
+              <strong className="text-slate-900">Session Security:</strong> In-browser user tokens live strictly in memory to prevent persistent credential harvesting attacks.
             </li>
           </ul>
         </motion.section>
 
         {/* Footer */}
         <footer className="text-center py-6 text-xs text-slate-500 font-sans">
-          SentinelView Documentation Console · Portfolio abstract.
+          SentinelView Documentation Console · Portfolio abstract & architecture.
         </footer>
 
       </div>
