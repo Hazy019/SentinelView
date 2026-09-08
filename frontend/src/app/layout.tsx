@@ -118,14 +118,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="light">
+    <html lang="en" className="dark">
       <head>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
-      <body className={`${jakarta.variable} ${instrument.variable} ${jetbrains.variable} font-sans antialiased bg-[#FAFAF8] text-[#111318]`}>
+      <body className={`${jakarta.variable} ${instrument.variable} ${jetbrains.variable} font-sans antialiased bg-[#0B0F17] text-slate-100 selection:bg-[#2F5BFF] selection:text-white`}>
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>

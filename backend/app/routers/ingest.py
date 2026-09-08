@@ -2,7 +2,7 @@
 app/routers/ingest.py — POST /api/v1/ingest & POST /api/v1/ingest/batch
 
 Receives, validates, and analyses log events from the generator or external systems.
-Pushes alerts to connected WebSocket clients via the connection manager.
+Pushes alerts to connected WebSocket clients via the tenant-isolated connection manager.
 Enqueues events and alerts for async SQLite persistence.
 Supports optional outbound Webhook notifications to external SIEMs/chatbots.
 
@@ -45,14 +45,14 @@ async def _dispatch_webhook_alert(alert: AlertPayload) -> None:
                     "data": alert.to_ws_dict(),
                 },
             )
-            logger.info("webhook.dispatched", alert_id=alert.alert_id)
+            logger.info("webhook.dispatched", alert_id=alert.alert_id, tenant_id=alert.tenant_id)
     except Exception as exc:
         logger.warning("webhook.dispatch_failed", alert_id=alert.alert_id, error=str(exc))
 
 
 async def _process_single_event(event: LogEvent) -> AlertPayload | None:
     """Helper to persist event, evaluate rules, persist alert, broadcast WS, and dispatch webhook."""
-    # Persist the raw event (for crash-recovery window rebuild)
+    # Persist the raw event with tenant metadata
     await enqueue_log_event({
         "timestamp": event.timestamp.isoformat(),
         "source_ip": event.source_ip,
@@ -61,13 +61,14 @@ async def _process_single_event(event: LogEvent) -> AlertPayload | None:
         "status_code": event.status_code,
         "username": event.username,
         "bytes_sent": event.bytes_sent,
+        "tenant_id": event.tenant_id,
     })
 
-    # Run threat detection
+    # Run threat detection (tenant-aware)
     alert = rules.analyze(event)
 
     if alert:
-        # Persist the alert
+        # Persist the alert with tenant and monotonic sequence ID
         await enqueue_alert({
             "alert_id": alert.alert_id,
             "timestamp": alert.timestamp.isoformat(),
@@ -75,10 +76,12 @@ async def _process_single_event(event: LogEvent) -> AlertPayload | None:
             "threat_type": alert.threat_type.value,
             "confidence": alert.confidence.value,
             "detail": alert.detail,
+            "tenant_id": alert.tenant_id,
+            "seq": alert.seq,
         })
 
-        # Broadcast to all connected WebSocket clients (minimal payload only)
-        await manager.broadcast(alert.to_ws_dict())
+        # Broadcast to all connected WebSocket clients within this tenant
+        await manager.broadcast(alert.to_ws_dict(), tenant_id=alert.tenant_id)
 
         # Dispatch outbound webhook asynchronously in background
         asyncio.create_task(_dispatch_webhook_alert(alert))
@@ -100,7 +103,11 @@ async def ingest(
     4. If an alert is generated, persist, broadcast to WS clients, and trigger webhooks.
     """
     alert = await _process_single_event(event)
-    return {"status": "ok", "alert_generated": alert is not None}
+    return {
+        "status": "ok",
+        "alert_generated": alert is not None,
+        "tenant_id": event.tenant_id,
+    }
 
 
 @router.post("/ingest/batch", response_model=BatchIngestResponse, status_code=status.HTTP_200_OK)
@@ -114,6 +121,8 @@ async def ingest_batch(
     """
     alerts_count = 0
     for evt in body.events:
+        if not evt.tenant_id or evt.tenant_id == "default_tenant":
+            evt.tenant_id = body.tenant_id
         alert = await _process_single_event(evt)
         if alert:
             alerts_count += 1

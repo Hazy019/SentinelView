@@ -68,10 +68,12 @@ class LogEvent(BaseModel):
     status_code: int = Field(..., ge=100, le=599)
     username: str | None = None
     bytes_sent: int = Field(..., ge=0)
+    tenant_id: str = Field(default="default_tenant", max_length=64)
 
 
 class BatchLogEventRequest(BaseModel):
     events: list[LogEvent] = Field(..., min_length=1, max_length=500)
+    tenant_id: str = Field(default="default_tenant", max_length=64)
 
 
 class BatchIngestResponse(BaseModel):
@@ -92,6 +94,8 @@ class AlertPayload(BaseModel):
     threat_type: ThreatType
     confidence: Confidence
     detail: str = Field(..., max_length=120)
+    tenant_id: str = Field(default="default_tenant", max_length=64)
+    seq: int = Field(default=0, ge=0)
 
     def to_ws_dict(self) -> dict:
         """Minimal serialisation for WebSocket push."""
@@ -102,7 +106,17 @@ class AlertPayload(BaseModel):
             "threat_type": self.threat_type.value,
             "confidence": self.confidence.value,
             "detail": self.detail,
+            "tenant_id": self.tenant_id,
+            "seq": self.seq,
         }
+
+
+class BackfillResponse(BaseModel):
+    type: Literal["BACKFILL"] = "BACKFILL"
+    tenant_id: str
+    since_seq: int
+    latest_seq: int
+    alerts: list[dict]
 
 
 # ---------------------------------------------------------------------------
@@ -112,12 +126,22 @@ class AlertPayload(BaseModel):
 class TokenRequest(BaseModel):
     username: str
     password: str
+    tenant_id: str = Field(default="default_tenant", max_length=64)
+
+
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str
 
 
 class TokenResponse(BaseModel):
     access_token: str
     token_type: Literal["bearer"] = "bearer"
+    refresh_token: str | None = None
+    expires_in: int = 3600
+    tenant_id: str = "default_tenant"
 
 
 class WSTicketResponse(BaseModel):
     ticket: str
+    tenant_id: str = "default_tenant"
+

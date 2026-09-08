@@ -1,8 +1,8 @@
 """
-app/engine/rules.py — Sliding-window threat detection rules engine.
+app/engine/rules.py — Multi-Tenant Sliding-Window Threat Detection Rules Engine.
 
-State lives in asyncio-safe in-memory structures (defaultdict of deques).
-This state is NOT thread-safe across processes — single Uvicorn worker ONLY.
+State lives in asyncio-safe in-memory structures keyed by (tenant_id, source_ip).
+Alerts carry tenant_id and an atomic monotonic sequence number (seq).
 
 Thresholds are imported from app.models.schemas.Thresholds (no magic numbers).
 
@@ -26,19 +26,19 @@ from app.models.schemas import (
     Thresholds,
     ThreatType,
 )
+from app.ws.connection_manager import manager
 
 logger = get_logger(__name__)
 
 # ---------------------------------------------------------------------------
-# Sliding-window state — all asyncio-safe (single-worker, coroutine-based)
+# Multi-Tenant Sliding-Window State: (tenant_id, source_ip) -> rolling deques
 # ---------------------------------------------------------------------------
 
-# BRUTE_FORCE: track failed LOGIN events per source_ip
-# deque items: datetime of each failed login
-_failed_logins: defaultdict[str, deque[datetime]] = defaultdict(deque)
+# BRUTE_FORCE: track failed LOGIN datetimes per (tenant_id, source_ip)
+_failed_logins: defaultdict[tuple[str, str], deque[datetime]] = defaultdict(deque)
 
-# PORT_SCAN: track (timestamp, dest_ip) tuples per source_ip
-_scan_attempts: defaultdict[str, deque[tuple[datetime, str]]] = defaultdict(deque)
+# PORT_SCAN: track (timestamp, dest_ip) tuples per (tenant_id, source_ip)
+_scan_attempts: defaultdict[tuple[str, str], deque[tuple[datetime, str]]] = defaultdict(deque)
 
 
 def _now() -> datetime:
@@ -64,12 +64,9 @@ def _evict_stale_datetimes(dq: deque[datetime], window_seconds: int) -> None:
 
 def analyze(event: LogEvent) -> Optional[AlertPayload]:
     """
-    Apply all rules to a single log event.
-    Returns an AlertPayload if a threat is detected, otherwise None.
-
-    All thresholds come from Thresholds constants — no inline numbers.
+    Apply all rules to a single log event within its tenant boundary.
+    Returns an AlertPayload with monotonic sequence ID if a threat is detected.
     """
-    # Try each rule in priority order; return the first match.
     alert = (
         _check_brute_force(event)
         or _check_port_scan(event)
@@ -79,6 +76,8 @@ def analyze(event: LogEvent) -> Optional[AlertPayload]:
     if alert:
         logger.info(
             "alert.generated",
+            tenant_id=alert.tenant_id,
+            seq=alert.seq,
             threat_type=alert.threat_type.value,
             confidence=alert.confidence.value,
             source_ip=alert.source_ip,
@@ -96,44 +95,49 @@ def _check_brute_force(event: LogEvent) -> Optional[AlertPayload]:
     if event.action != Action.LOGIN:
         return None
 
-    # Only count explicit authentication failures
     if event.status_code not in (401, 403):
         return None
 
-    ip = event.source_ip
+    key = (event.tenant_id, event.source_ip)
     ts = event.timestamp if event.timestamp.tzinfo else event.timestamp.replace(tzinfo=timezone.utc)
 
     # Evict stale entries outside the 10-second window
-    _evict_stale_datetimes(_failed_logins[ip], Thresholds.BRUTE_FORCE_WINDOW_SECONDS)
+    _evict_stale_datetimes(_failed_logins[key], Thresholds.BRUTE_FORCE_WINDOW_SECONDS)
 
     # Record this failure
-    _failed_logins[ip].append(ts)
-    count = len(_failed_logins[ip])
+    _failed_logins[key].append(ts)
+    count = len(_failed_logins[key])
 
     if count > Thresholds.BRUTE_FORCE_HIGH_COUNT:
+        seq = manager.next_seq(event.tenant_id)
         return AlertPayload(
             alert_id=str(uuid.uuid4()),
             timestamp=_now(),
-            source_ip=ip,
+            source_ip=event.source_ip,
             threat_type=ThreatType.BRUTE_FORCE,
             confidence=Confidence.HIGH,
             detail=(
-                f"{count} failed login attempts from {ip} "
+                f"{count} failed login attempts from {event.source_ip} "
                 f"in {Thresholds.BRUTE_FORCE_WINDOW_SECONDS}s window"
             )[:120],
+            tenant_id=event.tenant_id,
+            seq=seq,
         )
 
     if count >= Thresholds.BRUTE_FORCE_MEDIUM_COUNT:
+        seq = manager.next_seq(event.tenant_id)
         return AlertPayload(
             alert_id=str(uuid.uuid4()),
             timestamp=_now(),
-            source_ip=ip,
+            source_ip=event.source_ip,
             threat_type=ThreatType.BRUTE_FORCE,
             confidence=Confidence.MEDIUM,
             detail=(
-                f"{count} failed login attempts from {ip} "
+                f"{count} failed login attempts from {event.source_ip} "
                 f"in {Thresholds.BRUTE_FORCE_WINDOW_SECONDS}s window"
             )[:120],
+            tenant_id=event.tenant_id,
+            seq=seq,
         )
 
     return None
@@ -147,31 +151,31 @@ def _check_port_scan(event: LogEvent) -> Optional[AlertPayload]:
     if event.action != Action.REQUEST:
         return None
 
-    ip = event.source_ip
+    key = (event.tenant_id, event.source_ip)
     ts = event.timestamp if event.timestamp.tzinfo else event.timestamp.replace(tzinfo=timezone.utc)
     dest = event.dest_ip
 
-    # Evict stale entries
-    _evict_stale(_scan_attempts[ip], Thresholds.PORT_SCAN_WINDOW_SECONDS)
+    # Evict stale entries outside 5-second window
+    _evict_stale(_scan_attempts[key], Thresholds.PORT_SCAN_WINDOW_SECONDS)
+    _scan_attempts[key].append((ts, dest))
 
-    # Record this attempt
-    _scan_attempts[ip].append((ts, dest))
-
-    # Count distinct destination IPs in the window
-    distinct_dests = {entry[1] for entry in _scan_attempts[ip]}
+    distinct_dests = {entry[1] for entry in _scan_attempts[key]}
     count = len(distinct_dests)
 
     if count > Thresholds.PORT_SCAN_HIGH_DEST_COUNT:
+        seq = manager.next_seq(event.tenant_id)
         return AlertPayload(
             alert_id=str(uuid.uuid4()),
             timestamp=_now(),
-            source_ip=ip,
+            source_ip=event.source_ip,
             threat_type=ThreatType.PORT_SCAN,
             confidence=Confidence.HIGH,
             detail=(
-                f"Port scan: {count} distinct destinations from {ip} "
+                f"Port scan: {count} distinct destinations from {event.source_ip} "
                 f"in {Thresholds.PORT_SCAN_WINDOW_SECONDS}s"
             )[:120],
+            tenant_id=event.tenant_id,
+            seq=seq,
         )
 
     return None
@@ -188,6 +192,7 @@ def _check_data_exfil(event: LogEvent) -> Optional[AlertPayload]:
     mb = event.bytes_sent / 1_000_000
 
     if event.bytes_sent > Thresholds.DATA_EXFIL_HIGH_BYTES:
+        seq = manager.next_seq(event.tenant_id)
         return AlertPayload(
             alert_id=str(uuid.uuid4()),
             timestamp=_now(),
@@ -195,9 +200,12 @@ def _check_data_exfil(event: LogEvent) -> Optional[AlertPayload]:
             threat_type=ThreatType.DATA_EXFIL,
             confidence=Confidence.HIGH,
             detail=f"Large data transfer: {mb:.1f}MB from {event.source_ip}"[:120],
+            tenant_id=event.tenant_id,
+            seq=seq,
         )
 
     if event.bytes_sent > Thresholds.DATA_EXFIL_MEDIUM_BYTES:
+        seq = manager.next_seq(event.tenant_id)
         return AlertPayload(
             alert_id=str(uuid.uuid4()),
             timestamp=_now(),
@@ -205,6 +213,8 @@ def _check_data_exfil(event: LogEvent) -> Optional[AlertPayload]:
             threat_type=ThreatType.DATA_EXFIL,
             confidence=Confidence.MEDIUM,
             detail=f"Suspicious transfer: {mb:.1f}MB from {event.source_ip}"[:120],
+            tenant_id=event.tenant_id,
+            seq=seq,
         )
 
     return None
@@ -223,7 +233,6 @@ async def rebuild_from_history(events: list[dict]) -> None:
     for raw in events:
         try:
             evt = LogEvent(**raw)
-            # Feed into window state without triggering alert dispatch
             _update_window_only(evt)
             count += 1
         except Exception as exc:
@@ -234,13 +243,13 @@ async def rebuild_from_history(events: list[dict]) -> None:
 
 def _update_window_only(event: LogEvent) -> None:
     """Update sliding-window state without generating or returning alerts."""
-    ip = event.source_ip
+    key = (event.tenant_id, event.source_ip)
     ts = event.timestamp if event.timestamp.tzinfo else event.timestamp.replace(tzinfo=timezone.utc)
 
     if event.action == Action.LOGIN and event.status_code in (401, 403):
-        _evict_stale_datetimes(_failed_logins[ip], Thresholds.BRUTE_FORCE_WINDOW_SECONDS)
-        _failed_logins[ip].append(ts)
+        _evict_stale_datetimes(_failed_logins[key], Thresholds.BRUTE_FORCE_WINDOW_SECONDS)
+        _failed_logins[key].append(ts)
 
     elif event.action == Action.REQUEST:
-        _evict_stale(_scan_attempts[ip], Thresholds.PORT_SCAN_WINDOW_SECONDS)
-        _scan_attempts[ip].append((ts, event.dest_ip))
+        _evict_stale(_scan_attempts[key], Thresholds.PORT_SCAN_WINDOW_SECONDS)
+        _scan_attempts[key].append((ts, event.dest_ip))

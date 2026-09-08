@@ -1,5 +1,5 @@
 /* ============================================================
-   SentinelView — Master Light-Mode SOC Dashboard Design System
+   SentinelView — Obsidian Threat-Intel Design System
    ============================================================ */
 
 @tailwind base;
@@ -7,27 +7,17 @@
 @tailwind utilities;
 
 :root {
-  /* Core Light-Mode Canvas */
-  --color-bg:           #FAFAF8;
-  --color-surface:      #FFFFFF;
-  --color-panel-border: rgba(17, 19, 24, 0.07);
-  --shadow-layered:     0 12px 32px -8px rgba(17, 19, 24, 0.06), 0 4px 12px -2px rgba(17, 19, 24, 0.03);
-  --shadow-elevated:    0 24px 48px -12px rgba(17, 19, 24, 0.09), 0 8px 16px -4px rgba(17, 19, 24, 0.04);
+  /* Base: Near-black obsidian background, NOT pure black */
+  --color-bg:           #0B0F17;
+  --color-surface:      rgba(255, 255, 255, 0.04);
+  --color-text:         #F1F5F9;
+  --color-text-dim:     #94A3B8;
+  
+  /* Single Blue Accent: Reserved for active/live states only */
+  --color-blue:         #2F5BFF;
+  --color-blue-glow:    rgba(47, 91, 255, 0.35);
 
-  /* Signature Brand Accent */
-  --color-blue:         #2563EB;
-  --color-blue-dim:     rgba(37, 99, 235, 0.08);
-
-  /* Functional Threat Colors */
-  --color-danger:       #EF4444;
-  --color-warn:         #F59E0B;
-  --color-success:      #10B981;
-
-  /* Typography Opacity Tiers */
-  --ink-100:            #111318;
-  --ink-60:             rgba(17, 19, 24, 0.62);
-  --ink-40:             rgba(17, 19, 24, 0.38);
-
+  /* Typography Fallbacks */
   --font-display-fallback: 'Instrument Serif', Georgia, serif;
   --font-sans-fallback: 'Plus Jakarta Sans', -apple-system, sans-serif;
   --font-mono-fallback: 'JetBrains Mono', monospace;
@@ -41,14 +31,14 @@ html {
   scroll-behavior: smooth;
   font-family: var(--font-sans, var(--font-sans-fallback));
   background-color: var(--color-bg);
-  color: var(--ink-100);
+  color: var(--color-text);
 }
 
 body {
   min-height: 100dvh;
   overflow-x: hidden;
   background-color: var(--color-bg);
-  color: var(--ink-100);
+  color: var(--color-text);
   font-family: var(--font-sans, var(--font-sans-fallback));
   -webkit-font-smoothing: antialiased;
 }
@@ -66,104 +56,113 @@ body {
   font-family: var(--font-mono, var(--font-mono-fallback));
 }
 
-/* ---- Subtle Ambient Gradient Mesh (One behind Hero section) ---- */
-.hero-gradient-mesh {
-  background-image: radial-gradient(circle at 50% -10%, rgba(37, 99, 235, 0.07) 0%, transparent 65%);
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
 }
 
-/* ---- Bento Card & Shadow Architecture ---- */
-.bento-card {
-  background: var(--color-surface);
-  border: 1px solid var(--color-panel-border);
-  border-radius: 16px;
-  box-shadow: var(--shadow-layered);
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+/* ---- Full-Canvas Subtle Animated Noise / Grain Overlay (2.5% opacity) ---- */
+.canvas-grain {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 999;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+}
+
+/* ---- Genuine 3-Layer Glassmorphism (Never backdrop-filter alone) ---- */
+/* Layer 1: semi-translucent fill + blur */
+/* Layer 2: 1px light-catch border */
+/* Layer 3: inset top highlight + ambient drop elevation */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.035);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.11), 0 8px 32px rgba(0, 0, 0, 0.45);
+  border-radius: 10px;
+  position: relative;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.glass-panel:hover {
+  border-color: rgba(255, 255, 255, 0.18);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16), 0 12px 36px rgba(0, 0, 0, 0.55);
+}
+
+.glass-panel-active {
+  background: rgba(47, 91, 255, 0.05);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(47, 91, 255, 0.35);
+  box-shadow: inset 0 1px 0 rgba(47, 91, 255, 0.3), 0 8px 32px rgba(0, 0, 0, 0.5);
+  border-radius: 10px;
   position: relative;
 }
 
-.bento-card:hover {
-  border-color: rgba(37, 99, 235, 0.20);
-  box-shadow: var(--shadow-elevated);
+/* ---- Shimmer Animation for Designed Cold-Start Telemetry Node Spin-Up ---- */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 
-/* ---- Visual Rhymes: HUD Corner Brackets (`⌐`) ---- */
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.03) 25%,
+    rgba(255, 255, 255, 0.09) 50%,
+    rgba(255, 255, 255, 0.03) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2.2s infinite ease-in-out;
+}
+
+/* ---- Recurring Motif: 1.5px Corner-Bracket Accents (⌐ ¬) ---- */
 .hud-bracket {
   position: relative;
 }
 
-.hud-bracket::before,
+.hud-bracket::before {
+  content: "";
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  width: 8px;
+  height: 8px;
+  border-top: 1.5px solid rgba(255, 255, 255, 0.25);
+  border-left: 1.5px solid rgba(255, 255, 255, 0.25);
+  pointer-events: none;
+  z-index: 10;
+}
+
 .hud-bracket::after {
   content: "";
   position: absolute;
-  width: 7px;
-  height: 7px;
-  border-color: rgba(17, 19, 24, 0.25);
+  bottom: 5px;
+  right: 5px;
+  width: 8px;
+  height: 8px;
+  border-bottom: 1.5px solid rgba(255, 255, 255, 0.25);
+  border-right: 1.5px solid rgba(255, 255, 255, 0.25);
   pointer-events: none;
+  z-index: 10;
 }
 
-.hud-bracket::before {
-  top: 6px;
-  left: 6px;
-  border-top: 1.5px solid;
-  border-left: 1.5px solid;
+.hud-bracket-active::before {
+  border-top-color: #2F5BFF;
+  border-left-color: #2F5BFF;
 }
 
-.hud-bracket::after {
-  bottom: 6px;
-  right: 6px;
-  border-bottom: 1.5px solid;
-  border-right: 1.5px solid;
-}
-
-/* ---- Radar Ping Dot Motif ---- */
-.ping-dot {
-  position: relative;
-  display: inline-flex;
-  height: 9px;
-  width: 9px;
-}
-
-.ping-dot-ring {
-  animation: ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
-  position: absolute;
-  display: inline-flex;
-  height: 100%;
-  width: 100%;
-  border-radius: 9999px;
-  opacity: 0.75;
-}
-
-@keyframes ping {
-  75%, 100% {
-    transform: scale(2.4);
-    opacity: 0;
-  }
-}
-
-/* ---- Status Dot Colors ---- */
-.status-dot-connected    { background: #10B981; }
-.status-dot-connecting   { background: #F59E0B; animation: blink 1s ease-in-out infinite; }
-.status-dot-error        { background: #EF4444; }
-.status-dot-disconnected { background: #94A3B8; }
-
-@keyframes blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.35; }
-}
-
-/* ---- Monospace Stream Line Typing Accent ---- */
-.log-typing-line {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-family: var(--font-mono, var(--font-mono-fallback));
-  font-size: 0.75rem;
-}
-
-.log-typing-line::before {
-  content: "›";
-  color: var(--color-blue);
-  font-weight: 700;
+.hud-bracket-active::after {
+  border-bottom-color: #2F5BFF;
+  border-right-color: #2F5BFF;
 }
 
 /* ---- Custom Scrollbar ---- */
@@ -174,11 +173,11 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(17, 19, 24, 0.15);
-  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(17, 19, 24, 0.35);
+  background: rgba(255, 255, 255, 0.3);
 }
 
 /* ---- Accessibility / Reduced Motion Fallbacks ---- */
@@ -190,6 +189,3 @@ body {
     scroll-behavior: auto !important;
   }
 }
-
-
-

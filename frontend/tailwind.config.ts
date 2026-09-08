@@ -13,18 +13,25 @@ const config: Config = {
         sans: ["var(--font-sans)", "-apple-system", "sans-serif"],
         mono: ["var(--font-mono)", "monospace"],
       },
+      borderRadius: {
+        DEFAULT: "8px",
+        sm: "4px",
+        md: "8px",
+        lg: "8px",
+        xl: "8px",
+        "2xl": "8px",
+      },
       colors: {
         base: "#FAFAF8",
         surface: "#FFFFFF",
         ink: {
-          primary: "#111318",
-          secondary: "rgba(17, 19, 24, 0.62)",
-          tertiary: "rgba(17, 19, 24, 0.38)",
+          primary: "#0B0F17",
+          secondary: "rgba(11, 15, 23, 0.64)",
+          tertiary: "rgba(11, 15, 23, 0.38)",
         },
         brand: {
-          blue: "#2563EB",
-          "blue-light": "#EFF6FF",
-          "blue-dim": "rgba(37, 99, 235, 0.08)",
+          blue: "#2F5BFF",
+          "blue-dim": "rgba(47, 91, 255, 0.08)",
         },
         threat: {
           high: "#EF4444",
@@ -33,12 +40,11 @@ const config: Config = {
         },
       },
       boxShadow: {
-        layered: "0 12px 32px -8px rgba(17, 19, 24, 0.06), 0 4px 12px -2px rgba(17, 19, 24, 0.03)",
-        elevated: "0 20px 48px -12px rgba(17, 19, 24, 0.08), 0 8px 16px -4px rgba(17, 19, 24, 0.04)",
+        tier1: "0 1px 3px 0 rgba(11, 15, 23, 0.05), 0 1px 2px -1px rgba(11, 15, 23, 0.05)",
+        tier2: "0 10px 25px -5px rgba(11, 15, 23, 0.08), 0 8px 10px -6px rgba(11, 15, 23, 0.04)",
       },
     },
   },
   plugins: [],
 };
 export default config;
-

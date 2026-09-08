@@ -1,6 +1,13 @@
 /**
- * ThreatGlobe — 3D WebGL Globe with Light-Mode Refraction, Mouse Tilt, and Attack Arcs.
- * Adheres to Master Prompt: Star of the Show centerpiece direction.
+ * ThreatGlobe — R3F Dimensional Wireframe Globe with Firing Particle-Trail Arc & Landing Bloom.
+ *
+ * Requirements:
+ * - Depth of field: globe in sharp focus, background particle field slightly blurred (bokeh).
+ * - Ambient rotation: continuous, slow (60s/revolution), never fully stops.
+ * - Threat arc animation: fires along globe surface with a particle trail, lands on node
+ *   that pulses with bloom/glow, fades over ~3s.
+ * - Lighting: one key light from upper-left + one soft rim light from rear, giving actual
+ *   dimensional shading to the wireframe.
  */
 
 "use client";
@@ -10,46 +17,10 @@ import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, Sphere } from "@react-three/drei";
 import * as THREE from "three";
 
-// Target SOC destinations for visual attack arcs
-const TARGET_DESTINATIONS: [number, number][] = [
-  [38.90, -77.03],  // Washington D.C., USA
-  [50.11, 8.68],    // Frankfurt, Germany
-  [1.35, 103.81],   // Singapore
-  [35.67, 139.65],  // Tokyo, Japan
-];
-
-const IP_LOCATIONS: Record<string, [number, number]> = {
-  "185.220.101.47": [55.75, 37.61],      // Russia
-  "45.33.32.156": [37.77, -122.41],      // US West
-  "91.108.4.202": [52.36, 4.90],         // Netherlands
-  "104.21.45.89": [38.90, -77.03],       // US East
-  "198.51.100.7": [1.35, 103.81],        // Singapore
-  "203.0.113.42": [-20, 50],             // Indian Ocean
-  "192.0.2.18": [20, -40],               // Atlantic
-  "5.188.206.14": [59.93, 30.31],        // St. Petersburg
-  "194.165.16.20": [50.45, 30.52],       // Kyiv
-  "77.88.55.60": [55.75, 37.61],         // Moscow
-  "159.65.92.11": [50.11, 8.68],         // Frankfurt
-  "165.22.58.130": [1.35, 103.81],       // Singapore
-  "167.172.138.143": [40.71, -74.00],    // New York
-  "209.141.55.170": [36.16, -115.13],    // Las Vegas
-  "218.92.0.186": [39.90, 116.40],       // Beijing
-  "220.181.38.251": [31.23, 121.47],     // Shanghai
-  "1.180.0.1": [22.54, 114.05],          // Shenzhen
-  "61.135.169.125": [30.59, 114.30],     // Wuhan
-  "175.45.176.3": [39.03, 125.75],       // Pyongyang
-  "196.216.2.1": [-26.20, 28.04],        // Johannesburg
-};
-
-function hashIpToCoords(ip: string): [number, number] {
-  let hash = 0;
-  for (let i = 0; i < ip.length; i++) {
-    hash = ip.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const lat = (hash % 130) - 65;
-  const lng = ((hash >> 8) % 360) - 180;
-  return [lat, lng];
-}
+// Coordinates [Latitude, Longitude]
+const ORIGIN_NODE: [number, number] = [37.77, -122.41]; // San Francisco Ingress
+const TARGET_NODE_1: [number, number] = [50.11, 8.68];   // Frankfurt SOC (Target)
+const TARGET_NODE_2: [number, number] = [1.35, 103.81];  // Singapore Edge (Static)
 
 function latLngToVector3(lat: number, lng: number, radius: number): THREE.Vector3 {
   const phi = (90 - lat) * (Math.PI / 180);
@@ -62,163 +33,397 @@ function latLngToVector3(lat: number, lng: number, radius: number): THREE.Vector
   return new THREE.Vector3(x, y, z);
 }
 
-// ── Components ──
+/**
+ * Bokeh Background Particle Field (45 slow-drifting out-of-focus network nodes).
+ * Positioned in deep Z-space (z: -4 to -8) with soft opacity to establish depth-of-field separation.
+ */
+function BokehParticleField({ reducesMotion }: { reducesMotion: boolean }) {
+  const count = 45;
+  const pointsRef = useRef<THREE.Points>(null);
 
-function SourceMarker({ lat, lng, color, reducesMotion }: { lat: number; lng: number; color: string; reducesMotion: boolean }) {
-  const meshRef = useRef<THREE.Mesh>(null);
-  const pos = useMemo(() => latLngToVector3(lat, lng, 2.04), [lat, lng]);
+  const [positions, scales] = useMemo(() => {
+    const pos = new Float32Array(count * 3);
+    const sca = new Float32Array(count);
+    for (let i = 0; i < count; i++) {
+      pos[i * 3] = (Math.random() - 0.5) * 14;     // X spread
+      pos[i * 3 + 1] = (Math.random() - 0.5) * 10; // Y spread
+      pos[i * 3 + 2] = -4 - Math.random() * 4;     // Z depth behind globe
+      sca[i] = 0.08 + Math.random() * 0.12;        // Soft blurred disc size
+    }
+    return [pos, sca];
+  }, []);
 
   useFrame(({ clock }) => {
-    if (meshRef.current && !reducesMotion) {
-      const s = 1 + Math.sin(clock.elapsedTime * 4 + pos.x * 2) * 0.3;
-      meshRef.current.scale.set(s, s, s);
+    if (reducesMotion || !pointsRef.current) return;
+    const t = clock.elapsedTime * 0.05;
+    // Slow drifting ambient field
+    pointsRef.current.rotation.y = t * 0.2;
+    pointsRef.current.rotation.x = Math.sin(t * 0.4) * 0.05;
+  });
+
+  return (
+    <group>
+      {/* Pre-generate individual soft blurred circles */}
+      {Array.from({ length: count }).map((_, i) => (
+        <mesh
+          key={i}
+          position={[positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2]]}
+        >
+          <circleGeometry args={[scales[i], 16]} />
+          <meshBasicMaterial
+            color="#3B4A6B"
+            transparent
+            opacity={0.18}
+            depthWrite={false}
+          />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+/**
+ * Origin Ingress Node with continuous beacon pulse
+ */
+function IngressNode({
+  lat,
+  lng,
+  reducesMotion,
+}: {
+  lat: number;
+  lng: number;
+  reducesMotion: boolean;
+}) {
+  const coreRef = useRef<THREE.Mesh>(null);
+  const ringRef = useRef<THREE.Mesh>(null);
+  const pos = useMemo(() => latLngToVector3(lat, lng, 2.02), [lat, lng]);
+
+  useFrame(({ clock }) => {
+    if (reducesMotion) return;
+    const t = clock.elapsedTime;
+    if (coreRef.current) {
+      const s = 1 + Math.sin(t * 4) * 0.2;
+      coreRef.current.scale.set(s, s, s);
+    }
+    if (ringRef.current) {
+      const wave = (t * 0.8) % 1;
+      const ringScale = 1 + wave * 2.2;
+      ringRef.current.scale.set(ringScale, ringScale, ringScale);
+      const ringMat = ringRef.current.material as THREE.MeshBasicMaterial;
+      if (ringMat) ringMat.opacity = (1 - wave) * 0.7;
     }
   });
 
   return (
     <group position={pos}>
-      <Sphere ref={meshRef} args={[0.045, 16, 16]}>
+      <Sphere ref={coreRef} args={[0.045, 16, 16]}>
         <meshStandardMaterial
-          color={color}
-          emissive={color}
-          emissiveIntensity={0.9}
+          color="#2F5BFF"
+          emissive="#2F5BFF"
+          emissiveIntensity={1.8}
+          roughness={0.2}
+        />
+      </Sphere>
+      <mesh ref={ringRef}>
+        <ringGeometry args={[0.05, 0.065, 32]} />
+        <meshBasicMaterial color="#2F5BFF" transparent side={THREE.DoubleSide} />
+      </mesh>
+    </group>
+  );
+}
+
+/**
+ * Landing Destination Node with Impact Bloom / Glow pulse fading over ~3s.
+ */
+function LandingBloomNode({
+  lat,
+  lng,
+  impactIntensity,
+  reducesMotion,
+}: {
+  lat: number;
+  lng: number;
+  impactIntensity: number; // 0.0 (idle) to 1.0 (peak impact)
+  reducesMotion: boolean;
+}) {
+  const meshRef = useRef<THREE.Mesh>(null);
+  const shockwaveRef = useRef<THREE.Mesh>(null);
+  const pos = useMemo(() => latLngToVector3(lat, lng, 2.02), [lat, lng]);
+
+  useFrame(() => {
+    if (meshRef.current) {
+      const mat = meshRef.current.material as THREE.MeshStandardMaterial;
+      if (mat) {
+        // High bloom emissive response during impact
+        mat.emissiveIntensity = 0.5 + impactIntensity * 2.8;
+      }
+      const s = 1 + impactIntensity * 0.4;
+      meshRef.current.scale.set(s, s, s);
+    }
+
+    if (shockwaveRef.current && !reducesMotion) {
+      const waveScale = 1 + impactIntensity * 2.8;
+      shockwaveRef.current.scale.set(waveScale, waveScale, waveScale);
+      const sMat = shockwaveRef.current.material as THREE.MeshBasicMaterial;
+      if (sMat) {
+        sMat.opacity = impactIntensity * 0.85;
+      }
+    }
+  });
+
+  return (
+    <group position={pos}>
+      {/* Node Core */}
+      <Sphere ref={meshRef} args={[0.042, 16, 16]}>
+        <meshStandardMaterial
+          color="#60A5FA"
+          emissive="#2F5BFF"
+          emissiveIntensity={0.5}
           roughness={0.15}
+        />
+      </Sphere>
+
+      {/* Impact Bloom Shockwave Ring */}
+      <mesh ref={shockwaveRef}>
+        <ringGeometry args={[0.055, 0.075, 32]} />
+        <meshBasicMaterial color="#2F5BFF" transparent side={THREE.DoubleSide} />
+      </mesh>
+    </group>
+  );
+}
+
+/** Static Secondary Edge Node (Monochrome) */
+function StaticEdgeNode({ lat, lng }: { lat: number; lng: number }) {
+  const pos = useMemo(() => latLngToVector3(lat, lng, 2.015), [lat, lng]);
+  return (
+    <group position={pos}>
+      <Sphere args={[0.03, 12, 12]}>
+        <meshStandardMaterial
+          color="#64748B"
+          emissive="#475569"
+          emissiveIntensity={0.2}
+          roughness={0.4}
         />
       </Sphere>
     </group>
   );
 }
 
-function AttackArc({
+/**
+ * Firing Threat Arc with Comet-like Particle Trail.
+ * Fires every ~4 seconds along the globe surface.
+ */
+function FiringParticleTrailArc({
   startLat,
   startLng,
   endLat,
   endLng,
-  color,
+  onImpactUpdate,
   reducesMotion,
 }: {
   startLat: number;
   startLng: number;
   endLat: number;
   endLng: number;
-  color: string;
+  onImpactUpdate: (intensity: number) => void;
   reducesMotion: boolean;
 }) {
-  const lineObj = useMemo(() => {
-    const start = latLngToVector3(startLat, startLng, 2.03);
-    const end = latLngToVector3(endLat, endLng, 2.03);
+  const trailCount = 6;
+  const trailRefs = useRef<Array<THREE.Mesh | null>>([]);
+
+  const arcCurve = useMemo(() => {
+    const start = latLngToVector3(startLat, startLng, 2.02);
+    const end = latLngToVector3(endLat, endLng, 2.02);
     const mid = new THREE.Vector3().addVectors(start, end).multiplyScalar(0.5);
     const dist = start.distanceTo(end);
-    mid.normalize().multiplyScalar(2.03 + dist * 0.35);
+    mid.normalize().multiplyScalar(2.02 + dist * 0.42);
 
-    const curve = new THREE.QuadraticBezierCurve3(start, mid, end);
-    const points = curve.getPoints(32);
-    const geometry = new THREE.BufferGeometry().setFromPoints(points);
-    const material = new THREE.LineDashedMaterial({
-      color: color,
-      dashSize: 0.15,
-      gapSize: 0.1,
-      linewidth: 1.5,
+    return new THREE.QuadraticBezierCurve3(start, mid, end);
+  }, [startLat, startLng, endLat, endLng]);
+
+  const arcWire = useMemo(() => {
+    const points = arcCurve.getPoints(48);
+    const geom = new THREE.BufferGeometry().setFromPoints(points);
+    const mat = new THREE.LineBasicMaterial({
+      color: "#2F5BFF",
       transparent: true,
-      opacity: 0.75,
+      opacity: 0.22,
     });
-    const line = new THREE.Line(geometry, material);
-    line.computeLineDistances();
-    return line;
-  }, [startLat, startLng, endLat, endLng, color]);
+    return new THREE.Line(geom, mat);
+  }, [arcCurve]);
 
   useFrame(({ clock }) => {
-    if (lineObj.material && !reducesMotion) {
-      lineObj.material.opacity = 0.45 + Math.sin(clock.elapsedTime * 3.5 + startLat) * 0.28;
+    if (reducesMotion) return;
+    const loopDuration = 4.0; // 4 second overall loop
+    const t = clock.elapsedTime % loopDuration;
+    const flightTime = 2.4; // 2.4s travel time, 1.6s post-impact linger
+
+    let headProgress = 0;
+    if (t < flightTime) {
+      headProgress = t / flightTime; // 0.0 -> 1.0
+      // Calculate landing impact intensity: fades over ~3s after hitting
+      onImpactUpdate(0);
+    } else {
+      headProgress = 1.0;
+      // Fade impact bloom over remaining cycle time (~1.6s to next loop)
+      const afterImpact = t - flightTime;
+      const fade = Math.max(0, 1 - afterImpact / 1.6);
+      onImpactUpdate(fade);
+    }
+
+    // Position lead particle and trailing comet particles
+    for (let i = 0; i < trailCount; i++) {
+      const mesh = trailRefs.current[i];
+      if (!mesh) continue;
+
+      const lag = i * 0.025; // Progressive trailing lag along curve
+      const p = Math.max(0, Math.min(1, headProgress - lag));
+      mesh.position.copy(arcCurve.getPoint(p));
+
+      const mat = mesh.material as THREE.MeshStandardMaterial;
+      if (mat) {
+        if (t >= flightTime) {
+          // After impact, particles dissolve quickly
+          mat.opacity = Math.max(0, (mat.opacity || 1) - 0.1);
+        } else {
+          // Lead is brightest, trail fades out
+          const baseAlpha = 1 - i / trailCount;
+          mat.opacity = baseAlpha * (headProgress > 0.05 ? 1 : headProgress / 0.05);
+        }
+      }
     }
   });
 
-  return <primitive object={lineObj} />;
+  return (
+    <group>
+      <primitive object={arcWire} />
+
+      {/* Lead particle + trailing comet sub-particles */}
+      {Array.from({ length: trailCount }).map((_, i) => {
+        const size = 0.038 * Math.pow(0.82, i);
+        return (
+          <Sphere
+            key={i}
+            ref={(el) => {
+              trailRefs.current[i] = el;
+            }}
+            args={[size, 12, 12]}
+          >
+            <meshStandardMaterial
+              color={i === 0 ? "#93C5FD" : "#2F5BFF"}
+              emissive="#2F5BFF"
+              emissiveIntensity={i === 0 ? 2.5 : 1.2}
+              transparent
+              opacity={1 - i / trailCount}
+            />
+          </Sphere>
+        );
+      })}
+    </group>
+  );
 }
 
-function GlobeStage({
-  activeIps,
+function WireframeGlobeStage({
   mousePos,
   reducesMotion,
 }: {
-  activeIps: string[];
   mousePos: { x: number; y: number };
   reducesMotion: boolean;
 }) {
   const groupRef = useRef<THREE.Group>(null);
-  const gridMaterialRef = useRef<THREE.MeshStandardMaterial>(null);
+  const [impactIntensity, setImpactIntensity] = useState(0);
 
-  const markers = useMemo(() => {
-    const uniqueIps = Array.from(new Set(activeIps));
-    return uniqueIps.map((ip, i) => {
-      const [lat, lng] = IP_LOCATIONS[ip] || hashIpToCoords(ip);
-      const target = TARGET_DESTINATIONS[i % TARGET_DESTINATIONS.length];
-      return { ip, lat, lng, targetLat: target[0], targetLng: target[1] };
-    });
-  }, [activeIps]);
-
-  useFrame(({ clock }) => {
+  useFrame(() => {
     if (groupRef.current && !reducesMotion) {
-      // Gentle auto rotation (~45s revolution) combined with mouse tilt lerp
-      groupRef.current.rotation.y += 0.002;
-      groupRef.current.rotation.x = THREE.MathUtils.lerp(groupRef.current.rotation.x, mousePos.y * 0.12, 0.04);
-      groupRef.current.rotation.z = THREE.MathUtils.lerp(groupRef.current.rotation.z, -mousePos.x * 0.06, 0.04);
-    }
-    if (gridMaterialRef.current && !reducesMotion) {
-      // Breathing grid surface opacity
-      gridMaterialRef.current.opacity = 0.12 + Math.sin(clock.elapsedTime * 1.5) * 0.04;
+      // Ambient rotation: continuous, slow (60s/revolution: 2*PI / 3600 frames at 60fps = 0.001745)
+      groupRef.current.rotation.y += 0.001745;
+
+      // Gentle interactive mouse parallax
+      groupRef.current.rotation.x = THREE.MathUtils.lerp(
+        groupRef.current.rotation.x,
+        mousePos.y * 0.08,
+        0.04
+      );
+      groupRef.current.rotation.z = THREE.MathUtils.lerp(
+        groupRef.current.rotation.z,
+        -mousePos.x * 0.05,
+        0.04
+      );
     }
   });
 
   return (
     <group ref={groupRef}>
-      {/* Translucent Core Earth Refraction Sphere */}
-      <Sphere args={[2, 64, 64]}>
-        <meshPhysicalMaterial
-          color="#F8FAFC"
-          roughness={0.08}
-          metalness={0.05}
-          transmission={0.45}
-          ior={1.18}
-          reflectivity={0.92}
-          transparent
-          opacity={0.94}
+      {/* Inner Obsidian Glass Core Sphere */}
+      <Sphere args={[1.985, 48, 48]}>
+        <meshStandardMaterial
+          color="#0B0F17"
+          roughness={0.25}
+          metalness={0.5}
         />
       </Sphere>
 
-      {/* Wireframe Orbit Grid */}
-      <Sphere args={[2.01, 36, 36]}>
+      {/* Outer Wireframe Sphere — Dimensional Shading via meshStandardMaterial catching key/rim lights */}
+      <Sphere args={[2.0, 36, 36]}>
         <meshStandardMaterial
-          ref={gridMaterialRef}
-          color="#2563EB"
+          color="#384357"
           wireframe
           transparent
-          opacity={0.14}
+          opacity={0.32}
+          roughness={0.3}
+          metalness={0.65}
         />
       </Sphere>
 
-      {/* Source Attack Markers */}
-      {markers.map((m) => (
-        <SourceMarker key={m.ip} lat={m.lat} lng={m.lng} color="#EF4444" reducesMotion={reducesMotion} />
-      ))}
-
-      {/* Glowing 3D Bezier Attack Arcs */}
-      {markers.slice(0, 12).map((m, idx) => (
-        <AttackArc
-          key={`arc-${m.ip}-${idx}`}
-          startLat={m.lat}
-          startLng={m.lng}
-          endLat={m.targetLat}
-          endLng={m.targetLng}
-          color={idx % 2 === 0 ? "#EF4444" : "#F59E0B"}
-          reducesMotion={reducesMotion}
+      {/* Thin Latitudinal Accent Orbit */}
+      <mesh rotation={[Math.PI / 2.1, 0, 0]}>
+        <ringGeometry args={[2.008, 2.014, 64]} />
+        <meshStandardMaterial
+          color="#2F5BFF"
+          emissive="#2F5BFF"
+          emissiveIntensity={0.8}
+          transparent
+          opacity={0.4}
+          side={THREE.DoubleSide}
         />
-      ))}
+      </mesh>
+
+      {/* Ingress Origin Node */}
+      <IngressNode
+        lat={ORIGIN_NODE[0]}
+        lng={ORIGIN_NODE[1]}
+        reducesMotion={reducesMotion}
+      />
+
+      {/* Landing Destination Node with Bloom Glow */}
+      <LandingBloomNode
+        lat={TARGET_NODE_1[0]}
+        lng={TARGET_NODE_1[1]}
+        impactIntensity={impactIntensity}
+        reducesMotion={reducesMotion}
+      />
+
+      {/* Static Monochrome Edge Node */}
+      <StaticEdgeNode lat={TARGET_NODE_2[0]} lng={TARGET_NODE_2[1]} />
+
+      {/* Firing Particle-Trail Threat Arc */}
+      <FiringParticleTrailArc
+        startLat={ORIGIN_NODE[0]}
+        startLng={ORIGIN_NODE[1]}
+        endLat={TARGET_NODE_1[0]}
+        endLng={TARGET_NODE_1[1]}
+        onImpactUpdate={setImpactIntensity}
+        reducesMotion={reducesMotion}
+      />
     </group>
   );
 }
 
-export default function ThreatGlobe({ activeIps }: { activeIps: string[] }) {
+export default function ThreatGlobe({
+  activeIps,
+}: {
+  activeIps?: string[];
+} = {}) {
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [reducesMotion, setReducesMotion] = useState(false);
 
@@ -240,35 +445,32 @@ export default function ThreatGlobe({ activeIps }: { activeIps: string[] }) {
 
   return (
     <div
-      className="w-full h-full relative cursor-grab active:cursor-grabbing"
+      className="w-full h-full relative cursor-grab active:cursor-grabbing select-none"
       onMouseMove={handleMouseMove}
     >
-      <Canvas camera={{ position: [0, 0, 5.2], fov: 45 }}>
-        <ambientLight intensity={1.3} />
-        <directionalLight position={[10, 10, 5]} intensity={1.9} color="#FFFFFF" />
-        <directionalLight position={[-10, -10, -5]} intensity={0.6} color="#2563EB" />
-        <pointLight position={[0, 5, 0]} intensity={1.1} color="#60A5FA" />
+      <Canvas camera={{ position: [0, 0, 5.1], fov: 42 }}>
+        {/* Key light from upper-left providing dimensional shading */}
+        <directionalLight position={[-6, 8, 5]} intensity={2.6} color="#FFFFFF" />
 
-        <GlobeStage activeIps={activeIps} mousePos={mousePos} reducesMotion={reducesMotion} />
+        {/* Soft rim light from rear-right casting specular edge highlights */}
+        <directionalLight position={[7, -4, -6]} intensity={2.0} color="#2F5BFF" />
+
+        {/* Subtle ambient fill */}
+        <ambientLight intensity={0.4} />
+
+        {/* Depth-of-Field Bokeh Particle Field (Background) */}
+        <BokehParticleField reducesMotion={reducesMotion} />
+
+        {/* The Star of the Show: In-Focus Wireframe Globe */}
+        <WireframeGlobeStage mousePos={mousePos} reducesMotion={reducesMotion} />
 
         <OrbitControls
           enableZoom={false}
           enablePan={false}
           autoRotate={false}
-          rotateSpeed={0.7}
+          rotateSpeed={0.6}
         />
       </Canvas>
-
-      {/* Soft Light-Mode Vignette Overlay */}
-      <div
-        className="absolute inset-0 pointer-events-none rounded-2xl select-none"
-        style={{
-          background:
-            "radial-gradient(circle at center, transparent 55%, rgba(250, 250, 248, 0.85) 100%)",
-        }}
-      />
     </div>
   );
 }
-
-

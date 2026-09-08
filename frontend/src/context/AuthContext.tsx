@@ -1,12 +1,10 @@
 /**
- * AuthContext — JWT stored in React state only.
+ * AuthContext — Multi-Tenant JWT & Refresh Session Management.
  *
- * Security design (intentional, documented):
- * - JWT lives in React state + Context ONLY.
- * - It is NEVER written to localStorage, sessionStorage, or any cookie.
- * - On page refresh the token is lost and the user must re-login.
- *   This is the intended security tradeoff — no persistent credential storage.
- * - The Axios interceptor reads the token from module scope via setApiToken().
+ * Security design:
+ * - Access token in memory (never written to localStorage or cookies).
+ * - Automatic refresh token rotation via POST /auth/refresh.
+ * - Multi-tenant isolation: binds sessions to tenant_id.
  */
 
 "use client";
@@ -23,17 +21,20 @@ import api, { setApiToken } from "@/lib/api";
 export interface AuthContextValue {
   token: string | null;
   username: string | null;
+  tenantId: string;
   isAuthenticated: boolean;
-  login: (username: string, password: string) => Promise<void>;
+  login: (username: string, password: string, tenantId?: string) => Promise<void>;
+  refreshToken: () => Promise<void>;
   logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  // JWT in React state — never serialised to storage.
   const [token, setToken] = useState<string | null>(null);
+  const [refreshTokenVal, setRefreshTokenVal] = useState<string | null>(null);
   const [username, setUsername] = useState<string | null>(null);
+  const [tenantId, setTenantId] = useState<string>("default_tenant");
 
   // Keep the Axios interceptor in sync with the current token.
   useEffect(() => {
@@ -42,29 +43,77 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(() => {
     setToken(null);
+    setRefreshTokenVal(null);
     setUsername(null);
+    setTenantId("default_tenant");
     setApiToken(null);
   }, []);
 
-  // Listen for 401 responses from any Axios call → auto-logout.
+  // Silent Token Refresh Handler
+  const refreshToken = useCallback(async () => {
+    if (!refreshTokenVal) {
+      logout();
+      return;
+    }
+    try {
+      const { data } = await api.post<{
+        access_token: string;
+        refresh_token?: string;
+        tenant_id: string;
+      }>("/auth/refresh", {
+        refresh_token: refreshTokenVal,
+      });
+      setToken(data.access_token);
+      if (data.refresh_token) setRefreshTokenVal(data.refresh_token);
+      if (data.tenant_id) setTenantId(data.tenant_id);
+    } catch {
+      logout();
+    }
+  }, [refreshTokenVal, logout]);
+
+  // Listen for 401 responses from any Axios call → trigger refresh or auto-logout.
   useEffect(() => {
-    const handler = () => logout();
+    const handler = () => {
+      if (refreshTokenVal) {
+        refreshToken();
+      } else {
+        logout();
+      }
+    };
     window.addEventListener("sv:unauthorized", handler);
     return () => window.removeEventListener("sv:unauthorized", handler);
-  }, [logout]);
+  }, [logout, refreshToken, refreshTokenVal]);
 
-  const login = useCallback(async (u: string, p: string) => {
-    const { data } = await api.post<{ access_token: string }>("/auth/token", {
-      username: u,
-      password: p,
-    });
-    setToken(data.access_token);
-    setUsername(u);
-  }, []);
+  const login = useCallback(
+    async (u: string, p: string, tenant: string = "default_tenant") => {
+      const { data } = await api.post<{
+        access_token: string;
+        refresh_token?: string;
+        tenant_id?: string;
+      }>("/auth/token", {
+        username: u,
+        password: p,
+        tenant_id: tenant,
+      });
+      setToken(data.access_token);
+      if (data.refresh_token) setRefreshTokenVal(data.refresh_token);
+      setUsername(u);
+      setTenantId(data.tenant_id || tenant);
+    },
+    []
+  );
 
   return (
     <AuthContext.Provider
-      value={{ token, username, isAuthenticated: !!token, login, logout }}
+      value={{
+        token,
+        username,
+        tenantId,
+        isAuthenticated: !!token,
+        login,
+        refreshToken,
+        logout,
+      }}
     >
       {children}
     </AuthContext.Provider>
