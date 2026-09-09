@@ -132,12 +132,12 @@ body {
 .hud-bracket::before {
   content: "";
   position: absolute;
-  top: 5px;
-  left: 5px;
+  top: 6px;
+  left: 6px;
   width: 8px;
   height: 8px;
-  border-top: 1.5px solid rgba(255, 255, 255, 0.25);
-  border-left: 1.5px solid rgba(255, 255, 255, 0.25);
+  border-top: 1.5px solid rgba(15, 23, 42, 0.18);
+  border-left: 1.5px solid rgba(15, 23, 42, 0.18);
   pointer-events: none;
   z-index: 10;
 }
@@ -145,12 +145,12 @@ body {
 .hud-bracket::after {
   content: "";
   position: absolute;
-  bottom: 5px;
-  right: 5px;
+  bottom: 6px;
+  right: 6px;
   width: 8px;
   height: 8px;
-  border-bottom: 1.5px solid rgba(255, 255, 255, 0.25);
-  border-right: 1.5px solid rgba(255, 255, 255, 0.25);
+  border-bottom: 1.5px solid rgba(15, 23, 42, 0.18);
+  border-right: 1.5px solid rgba(15, 23, 42, 0.18);
   pointer-events: none;
   z-index: 10;
 }
@@ -163,6 +163,17 @@ body {
 .hud-bracket-active::after {
   border-bottom-color: #2F5BFF;
   border-right-color: #2F5BFF;
+}
+
+/* Atmospheric spatial depth behind 3D Cyber Threat Globe */
+.globe-radial-glow {
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(37, 99, 235, 0.15) 0%,
+    rgba(37, 99, 235, 0.05) 45%,
+    rgba(15, 23, 42, 0.02) 65%,
+    transparent 80%
+  );
 }
 
 /* ---- Custom Scrollbar ---- */

@@ -11,13 +11,18 @@ import { motion } from "framer-motion";
 interface IntegrationModalProps {
   isOpen: boolean;
   onClose: () => void;
+  apiKey?: string | null;
+  tenantId?: string;
 }
 
 type TabType = "curl" | "python" | "nodejs" | "shippers" | "webhooks" | "embed";
 
-export default function IntegrationModal({ isOpen, onClose }: IntegrationModalProps) {
+export default function IntegrationModal({ isOpen, onClose, apiKey, tenantId }: IntegrationModalProps) {
   const [activeTab, setActiveTab] = useState<TabType>("curl");
   const [copied, setCopied] = useState<string | null>(null);
+
+  const currentKey = apiKey || "sv_demo_key_999a0b1c2d3e";
+  const currentTenant = tenantId || "default_tenant";
 
   const copyToClipboard = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
@@ -27,7 +32,7 @@ export default function IntegrationModal({ isOpen, onClose }: IntegrationModalPr
 
   const curlSingleSnippet = `curl -X POST "http://localhost:8000/api/v1/ingest" \\
   -H "Content-Type: application/json" \\
-  -H "X-API-Key: YOUR_INGEST_API_KEY" \\
+  -H "X-API-Key: ${currentKey}" \\
   -d '{
     "timestamp": "'$(date -u +"%Y-%m-%dT%H:%M:%SZ")'",
     "source_ip": "185.220.101.47",
@@ -40,8 +45,9 @@ export default function IntegrationModal({ isOpen, onClose }: IntegrationModalPr
 
   const curlBatchSnippet = `curl -X POST "http://localhost:8000/api/v1/ingest/batch" \\
   -H "Content-Type: application/json" \\
-  -H "X-API-Key: YOUR_INGEST_API_KEY" \\
+  -H "X-API-Key: ${currentKey}" \\
   -d '{
+    "tenant_id": "${currentTenant}",
     "events": [
       {
         "timestamp": "'$(date -u +"%Y-%m-%dT%H:%M:%SZ")'",
@@ -79,7 +85,7 @@ payload = {
 
 response = requests.post(
     "http://localhost:8000/api/v1/ingest",
-    headers={"X-API-Key": "YOUR_INGEST_API_KEY"},
+    headers={"X-API-Key": "${currentKey}"},
     json=payload
 )
 print("Ingest Status:", response.json())`;
@@ -90,7 +96,7 @@ async function sendSecurityTelemetry(log) {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "X-API-Key": process.env.SENTINEL_API_KEY || "YOUR_API_KEY"
+      "X-API-Key": process.env.SENTINEL_API_KEY || "${currentKey}"
     },
     body: JSON.stringify({
       timestamp: new Date().toISOString(),
@@ -114,7 +120,7 @@ method = "post"
 encoding.codec = "json"
 
 [sinks.sentinelview.headers]
-"X-API-Key" = "YOUR_SECRET_INGEST_API_KEY"
+"X-API-Key" = "${currentKey}"
 "Content-Type" = "application/json"`;
 
   const webhookDocs = `// Outbound Webhook payload sent by SentinelView when threat is detected
@@ -172,6 +178,29 @@ encoding.codec = "json"
           >
             ✕
           </button>
+        </div>
+
+        {/* Active Tenant & API Key Credentials Strip */}
+        <div className="mx-6 mt-4 p-3 bg-slate-900 rounded-xl flex flex-wrap items-center justify-between gap-3 text-white">
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] uppercase tracking-wider font-mono text-slate-400">Ingestion API Key:</span>
+            <code className="px-2 py-0.5 rounded bg-slate-800 font-mono text-xs text-emerald-400 border border-emerald-500/30">
+              {currentKey}
+            </code>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] uppercase tracking-wider font-mono text-slate-400">Tenant:</span>
+            <code className="px-2 py-0.5 rounded bg-slate-800 font-mono text-xs text-blue-400">
+              {currentTenant}
+            </code>
+            <button
+              type="button"
+              onClick={() => copyToClipboard(currentKey, "active-key")}
+              className="px-2.5 py-1 rounded bg-blue-600 hover:bg-blue-500 text-xs font-sans font-semibold text-white transition-colors"
+            >
+              {copied === "active-key" ? "✓ Copied Key" : "Copy Key"}
+            </button>
+          </div>
         </div>
 
         {/* Tab Navigation */}

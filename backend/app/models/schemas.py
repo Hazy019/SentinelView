@@ -123,6 +123,12 @@ class BackfillResponse(BaseModel):
 # Auth schemas
 # ---------------------------------------------------------------------------
 
+class RegisterRequest(BaseModel):
+    username: str = Field(..., min_length=3, max_length=32, pattern=r"^[a-zA-Z0-9_-]+$")
+    password: str = Field(..., min_length=6, max_length=128)
+    tenant_name: str | None = Field(default=None, max_length=64)
+
+
 class TokenRequest(BaseModel):
     username: str
     password: str
@@ -139,9 +145,21 @@ class TokenResponse(BaseModel):
     refresh_token: str | None = None
     expires_in: int = 3600
     tenant_id: str = "default_tenant"
+    api_key: str | None = None
+    is_demo: bool = False
+
+
+class UserProfileResponse(BaseModel):
+    username: str
+    tenant_id: str
+    api_key: str
+    role: str
+    is_demo: bool = False
+    created_at: str
 
 
 class WSTicketResponse(BaseModel):
     ticket: str
     tenant_id: str = "default_tenant"
+
 

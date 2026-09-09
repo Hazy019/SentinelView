@@ -22,8 +22,11 @@ export interface AuthContextValue {
   token: string | null;
   username: string | null;
   tenantId: string;
+  apiKey: string | null;
+  isDemo: boolean;
   isAuthenticated: boolean;
   login: (username: string, password: string, tenantId?: string) => Promise<void>;
+  register: (username: string, password: string, tenantName?: string) => Promise<void>;
   refreshToken: () => Promise<void>;
   logout: () => void;
 }
@@ -35,6 +38,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [refreshTokenVal, setRefreshTokenVal] = useState<string | null>(null);
   const [username, setUsername] = useState<string | null>(null);
   const [tenantId, setTenantId] = useState<string>("default_tenant");
+  const [apiKey, setApiKey] = useState<string | null>(null);
+  const [isDemo, setIsDemo] = useState<boolean>(false);
 
   // Keep the Axios interceptor in sync with the current token.
   useEffect(() => {
@@ -46,6 +51,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setRefreshTokenVal(null);
     setUsername(null);
     setTenantId("default_tenant");
+    setApiKey(null);
+    setIsDemo(false);
     setApiToken(null);
   }, []);
 
@@ -60,12 +67,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         access_token: string;
         refresh_token?: string;
         tenant_id: string;
+        api_key?: string;
+        is_demo?: boolean;
       }>("/auth/refresh", {
         refresh_token: refreshTokenVal,
       });
       setToken(data.access_token);
       if (data.refresh_token) setRefreshTokenVal(data.refresh_token);
       if (data.tenant_id) setTenantId(data.tenant_id);
+      if (data.api_key) setApiKey(data.api_key);
+      if (typeof data.is_demo === "boolean") setIsDemo(data.is_demo);
     } catch {
       logout();
     }
@@ -90,6 +101,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         access_token: string;
         refresh_token?: string;
         tenant_id?: string;
+        api_key?: string;
+        is_demo?: boolean;
       }>("/auth/token", {
         username: u,
         password: p,
@@ -99,6 +112,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (data.refresh_token) setRefreshTokenVal(data.refresh_token);
       setUsername(u);
       setTenantId(data.tenant_id || tenant);
+      setApiKey(data.api_key || null);
+      setIsDemo(Boolean(data.is_demo || u === "demo"));
+    },
+    []
+  );
+
+  const register = useCallback(
+    async (u: string, p: string, tenantName?: string) => {
+      const { data } = await api.post<{
+        access_token: string;
+        refresh_token?: string;
+        tenant_id?: string;
+        api_key?: string;
+        is_demo?: boolean;
+      }>("/auth/register", {
+        username: u,
+        password: p,
+        tenant_name: tenantName || undefined,
+      });
+      setToken(data.access_token);
+      if (data.refresh_token) setRefreshTokenVal(data.refresh_token);
+      setUsername(u);
+      setTenantId(data.tenant_id || `tenant_${u.toLowerCase()}`);
+      setApiKey(data.api_key || null);
+      setIsDemo(false);
     },
     []
   );
@@ -109,8 +147,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         token,
         username,
         tenantId,
+        apiKey,
+        isDemo,
         isAuthenticated: !!token,
         login,
+        register,
         refreshToken,
         logout,
       }}

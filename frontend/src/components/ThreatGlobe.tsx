@@ -13,7 +13,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls, Sphere } from "@react-three/drei";
 import * as THREE from "three";
 
@@ -357,21 +357,23 @@ function WireframeGlobeStage({
       {/* Inner Obsidian Glass Core Sphere */}
       <Sphere args={[1.985, 48, 48]}>
         <meshStandardMaterial
-          color="#0B0F17"
-          roughness={0.25}
-          metalness={0.5}
+          color="#0B1220"
+          roughness={0.2}
+          metalness={0.6}
         />
       </Sphere>
 
       {/* Outer Wireframe Sphere — Dimensional Shading via meshStandardMaterial catching key/rim lights */}
       <Sphere args={[2.0, 36, 36]}>
         <meshStandardMaterial
-          color="#384357"
+          color="#3B82F6"
+          emissive="#1E3A8A"
+          emissiveIntensity={0.25}
           wireframe
           transparent
-          opacity={0.32}
-          roughness={0.3}
-          metalness={0.65}
+          opacity={0.38}
+          roughness={0.25}
+          metalness={0.7}
         />
       </Sphere>
 
@@ -419,11 +421,29 @@ function WireframeGlobeStage({
   );
 }
 
-export default function ThreatGlobe({
-  activeIps,
-}: {
-  activeIps?: string[];
-} = {}) {
+/** Dynamic Camera Controller — prevents sphere clipping on tall/narrow mobile viewports */
+function ResponsiveCamera() {
+  const { camera, size } = useThree();
+
+  useEffect(() => {
+    if (camera instanceof THREE.PerspectiveCamera) {
+      const aspect = size.width / Math.max(size.height, 1);
+      if (aspect < 1.0) {
+        camera.position.z = 5.8;
+      } else if (aspect < 1.3) {
+        camera.position.z = 5.4;
+      } else {
+        camera.position.z = 5.0;
+      }
+      camera.updateProjectionMatrix();
+    }
+  }, [camera, size.width, size.height]);
+
+  return null;
+}
+
+export default function ThreatGlobe(_props: { activeIps?: string[] } = {}) {
+  void _props;
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [reducesMotion, setReducesMotion] = useState(false);
 
@@ -449,6 +469,8 @@ export default function ThreatGlobe({
       onMouseMove={handleMouseMove}
     >
       <Canvas camera={{ position: [0, 0, 5.1], fov: 42 }}>
+        <ResponsiveCamera />
+
         {/* Key light from upper-left providing dimensional shading */}
         <directionalLight position={[-6, 8, 5]} intensity={2.6} color="#FFFFFF" />
 

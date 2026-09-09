@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   motion,
@@ -186,11 +186,12 @@ function UploadOutlineIcon({ active = false }: { active?: boolean }) {
 }
 
 export default function HomePage() {
-  const { login, isAuthenticated } = useAuth();
+  const { login, register, isAuthenticated } = useAuth();
   const router = useRouter();
 
   /* Modal state */
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<"login" | "register">("login");
   const [showColdStartSkeleton, setShowColdStartSkeleton] = useState(false);
 
   /* Form credentials & validation */
@@ -202,6 +203,7 @@ export default function HomePage() {
     server?: string;
   }>({});
   const [loading, setLoading] = useState(false);
+
 
   /* Live-scrolling log stream */
   const [logs, setLogs] = useState<
@@ -311,10 +313,48 @@ export default function HomePage() {
       setIsModalOpen(false);
       router.push("/dashboard");
     } catch (err: unknown) {
-      const detail =
-        (err as { response?: { data?: { detail?: string } } })?.response?.data
-          ?.detail ?? "Invalid credentials";
-      setFieldErrors({ server: detail });
+      const axiosErr = err as {
+        response?: { data?: { detail?: string }; status?: number };
+        code?: string;
+        message?: string;
+      };
+      if (!axiosErr.response) {
+        setFieldErrors({
+          server:
+            "Cannot connect to SentinelView backend. Please ensure the backend is running at http://localhost:8000 (or Render container is waking up).",
+        });
+      } else {
+        const detail = axiosErr.response.data?.detail ?? "Invalid credentials";
+        setFieldErrors({ server: detail });
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const executeRegister = async (u: string, p: string) => {
+    setLoading(true);
+    setFieldErrors({});
+
+    try {
+      await register(u, p);
+      setIsModalOpen(false);
+      router.push("/dashboard");
+    } catch (err: unknown) {
+      const axiosErr = err as {
+        response?: { data?: { detail?: string }; status?: number };
+        code?: string;
+        message?: string;
+      };
+      if (!axiosErr.response) {
+        setFieldErrors({
+          server:
+            "Cannot connect to SentinelView backend. Please ensure the backend is running at http://localhost:8000.",
+        });
+      } else {
+        const detail = axiosErr.response.data?.detail ?? "Registration failed. Please try another username.";
+        setFieldErrors({ server: detail });
+      }
     } finally {
       setLoading(false);
     }
@@ -323,17 +363,31 @@ export default function HomePage() {
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const errors: { username?: string; password?: string } = {};
-    if (!username.trim()) errors.username = "Username is required.";
-    if (!password) errors.password = "Password is required.";
+    if (!username.trim()) {
+      errors.username = "Username is required.";
+    } else if (username.length < 3) {
+      errors.username = "Username must be at least 3 characters.";
+    }
+
+    if (!password) {
+      errors.password = "Password is required.";
+    } else if (authMode === "register" && password.length < 6) {
+      errors.password = "Password must be at least 6 characters.";
+    }
 
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
       return;
     }
-    executeLogin(username, password);
+    if (authMode === "register") {
+      executeRegister(username, password);
+    } else {
+      executeLogin(username, password);
+    }
   };
 
   const handleInstantDemo = () => {
+    setAuthMode("login");
     setUsername("demo");
     setPassword("demo123");
     executeLogin("demo", "demo123");
@@ -699,13 +753,47 @@ export default function HomePage() {
               <div className="flex items-center gap-2.5 mb-1">
                 <SentinelLogo className="w-6 h-6" />
                 <h3 className="font-sans font-bold text-xl text-white tracking-tight">
-                  Analyst Console Access
+                  {authMode === "register" ? "Create Analyst Account" : "Analyst Console Access"}
                 </h3>
               </div>
 
-              <p className="font-sans text-xs text-slate-400 mb-5">
-                Authenticate with authorized credentials to connect to the live threat stream.
+              <p className="font-sans text-xs text-slate-400 mb-4">
+                {authMode === "register"
+                  ? "Register to receive a dedicated tenant ID and personal ingestion API key to monitor real websites."
+                  : "Authenticate with authorized credentials to connect to the live threat stream."}
               </p>
+
+              {/* Mode Switcher Tabs */}
+              <div className="flex bg-white/[0.05] p-1 rounded-lg mb-4 border border-white/10">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthMode("login");
+                    setFieldErrors({});
+                  }}
+                  className={`flex-1 py-1.5 rounded-md text-xs font-sans font-semibold transition-all ${
+                    authMode === "login"
+                      ? "bg-[#2F5BFF] text-white shadow-sm"
+                      : "text-slate-400 hover:text-white"
+                  }`}
+                >
+                  Sign In
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthMode("register");
+                    setFieldErrors({});
+                  }}
+                  className={`flex-1 py-1.5 rounded-md text-xs font-sans font-semibold transition-all ${
+                    authMode === "register"
+                      ? "bg-[#2F5BFF] text-white shadow-sm"
+                      : "text-slate-400 hover:text-white"
+                  }`}
+                >
+                  Create Account
+                </button>
+              </div>
 
               {/* Designed Cold-Start Shimmer Skeleton Notice */}
               {showColdStartSkeleton ? (
@@ -730,33 +818,41 @@ export default function HomePage() {
                     onClick={() => setShowColdStartSkeleton(false)}
                     className="mt-1 text-xs text-[#2F5BFF] hover:underline text-left font-mono"
                   >
-                    ← Return to Login Form
+                    ← Return to Form
                   </button>
                 </div>
               ) : (
                 <>
-                  {/* Instant Demo Access CTA */}
-                  <motion.button
-                    type="button"
-                    onClick={handleInstantDemo}
-                    disabled={loading}
-                    whileHover={{ scale: 1.02, transition: SPRING_SUBTLE }}
-                    whileTap={{ scale: 0.98 }}
-                    className="w-full mb-4 py-2.5 px-3 rounded-[8px] font-sans font-semibold text-xs text-white bg-[#2F5BFF]/20 hover:bg-[#2F5BFF]/30 border border-[#2F5BFF]/50 transition-colors flex items-center justify-center gap-2"
-                  >
-                    <span>⚡</span>
-                    <span>Instant Demo Access (One-Click)</span>
-                  </motion.button>
+                  {authMode === "login" ? (
+                    <>
+                      {/* Instant Demo Access CTA with clear Demo label */}
+                      <motion.button
+                        type="button"
+                        onClick={handleInstantDemo}
+                        disabled={loading}
+                        whileHover={{ scale: 1.02, transition: SPRING_SUBTLE }}
+                        whileTap={{ scale: 0.98 }}
+                        className="w-full mb-4 py-2.5 px-3 rounded-[8px] font-sans font-semibold text-xs text-white bg-[#2F5BFF]/20 hover:bg-[#2F5BFF]/30 border border-[#2F5BFF]/50 transition-colors flex items-center justify-center gap-2"
+                      >
+                        <span>⚡</span>
+                        <span>Instant Demo Sandbox Access (Preloaded Telemetry)</span>
+                      </motion.button>
 
-                  <div className="relative flex items-center mb-4">
-                    <div className="flex-grow border-t border-white/10" />
-                    <span className="flex-shrink mx-3 text-[10px] font-mono uppercase tracking-wider text-slate-500">
-                      Or enter credentials
-                    </span>
-                    <div className="flex-grow border-t border-white/10" />
-                  </div>
+                      <div className="relative flex items-center mb-4">
+                        <div className="flex-grow border-t border-white/10" />
+                        <span className="flex-shrink mx-3 text-[10px] font-mono uppercase tracking-wider text-slate-500">
+                          Or sign in with existing credentials
+                        </span>
+                        <div className="flex-grow border-t border-white/10" />
+                      </div>
+                    </>
+                  ) : (
+                    <div className="mb-4 p-2.5 rounded-[8px] bg-blue-500/10 border border-blue-500/20 text-[11px] font-mono text-blue-300">
+                      ⚡ Creates a dedicated tenant isolated from demo data with a personal Ingestion API Key.
+                    </div>
+                  )}
 
-                  {/* Login Form with Strict Custom Validation */}
+                  {/* Form with Custom Validation */}
                   <form noValidate onSubmit={handleFormSubmit} className="flex flex-col gap-4">
                     {/* Username */}
                     <div className="flex flex-col">
@@ -777,7 +873,7 @@ export default function HomePage() {
                             setFieldErrors((prev) => ({ ...prev, username: undefined }));
                           }
                         }}
-                        placeholder="demo"
+                        placeholder={authMode === "register" ? "analyst_name" : "demo"}
                         className={`rounded-[8px] px-3.5 py-2 text-sm font-mono outline-none transition-colors border bg-white/[0.03] text-white ${
                           fieldErrors.username
                             ? "border-[#EF4444] bg-red-500/10"
@@ -802,7 +898,7 @@ export default function HomePage() {
                       <input
                         id="modal-password"
                         type="password"
-                        autoComplete="current-password"
+                        autoComplete={authMode === "register" ? "new-password" : "current-password"}
                         value={password}
                         onChange={(e) => {
                           setPassword(e.target.value);
@@ -831,7 +927,7 @@ export default function HomePage() {
                       </div>
                     )}
 
-                    {/* Submit Button with Locked Width During Loading State */}
+                    {/* Submit Button */}
                     <motion.button
                       id="modal-submit"
                       type="submit"
@@ -862,10 +958,10 @@ export default function HomePage() {
                               d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                             />
                           </svg>
-                          <span>Authenticating…</span>
+                          <span>{authMode === "register" ? "Creating Account…" : "Authenticating…"}</span>
                         </>
                       ) : (
-                        <span>Access Console →</span>
+                        <span>{authMode === "register" ? "Create Account & Get API Key →" : "Access Console →"}</span>
                       )}
                     </motion.button>
                   </form>

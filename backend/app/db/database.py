@@ -80,6 +80,19 @@ async def init_db(db_path: str = DB_PATH) -> None:
         )
     """)
 
+    # --- Users table (for self-serve registration & tenant API keys) ---
+    await _db_connection.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id            INTEGER PRIMARY KEY AUTOINCREMENT,
+            username      TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            tenant_id     TEXT NOT NULL,
+            api_key       TEXT UNIQUE NOT NULL,
+            role          TEXT NOT NULL DEFAULT 'analyst',
+            created_at    TEXT NOT NULL
+        )
+    """)
+
     # Safe progressive migrations for pre-existing databases
     for col_sql in [
         "ALTER TABLE log_events ADD COLUMN tenant_id TEXT NOT NULL DEFAULT 'default_tenant'",
@@ -104,6 +117,35 @@ async def init_db(db_path: str = DB_PATH) -> None:
         CREATE INDEX IF NOT EXISTS idx_alerts_ts
         ON alerts(timestamp)
     """)
+    await _db_connection.execute("""
+        CREATE INDEX IF NOT EXISTS idx_users_username
+        ON users(username)
+    """)
+    await _db_connection.execute("""
+        CREATE INDEX IF NOT EXISTS idx_users_api_key
+        ON users(api_key)
+    """)
+
+    # Seed default demo account if missing
+    cursor = await _db_connection.execute("SELECT id FROM users WHERE username = ?", ("demo",))
+    if not await cursor.fetchone():
+        from app.core.config import get_settings
+        settings = get_settings()
+        now_str = datetime.now(timezone.utc).isoformat()
+        await _db_connection.execute(
+            """
+            INSERT OR IGNORE INTO users (username, password_hash, tenant_id, api_key, role, created_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (
+                "demo",
+                settings.allowed_password,
+                "default_tenant",
+                "sv_demo_key_999a0b1c2d3e",
+                "demo",
+                now_str,
+            ),
+        )
 
     await _db_connection.commit()
     logger.info("database.ready", journal_mode="WAL")
@@ -280,3 +322,58 @@ async def prune_old_events(retention_hours: int = 1) -> None:
             logger.info("prune_worker.pruned", deleted=deleted, cutoff=cutoff)
     except Exception as exc:
         logger.error("prune_worker.error", exc=str(exc))
+
+
+# ---------------------------------------------------------------------------
+# User and Tenant Authentication Queries
+# ---------------------------------------------------------------------------
+
+async def get_user_by_username(username: str) -> dict[str, Any] | None:
+    """Look up a user record by unique username."""
+    db = await get_db()
+    cursor = await db.execute(
+        "SELECT id, username, password_hash, tenant_id, api_key, role, created_at FROM users WHERE username = ?",
+        (username,),
+    )
+    row = await cursor.fetchone()
+    return dict(row) if row else None
+
+
+async def get_user_by_api_key(api_key: str) -> dict[str, Any] | None:
+    """Look up a user record by their personal ingestion API key."""
+    db = await get_db()
+    cursor = await db.execute(
+        "SELECT id, username, password_hash, tenant_id, api_key, role, created_at FROM users WHERE api_key = ?",
+        (api_key,),
+    )
+    row = await cursor.fetchone()
+    return dict(row) if row else None
+
+
+async def create_user(
+    username: str,
+    password_hash: str,
+    tenant_id: str,
+    api_key: str,
+    role: str = "analyst",
+) -> dict[str, Any]:
+    """Insert a new user account with dedicated tenant ID and API key."""
+    db = await get_db()
+    now_str = datetime.now(timezone.utc).isoformat()
+    cursor = await db.execute(
+        """
+        INSERT INTO users (username, password_hash, tenant_id, api_key, role, created_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+        """,
+        (username, password_hash, tenant_id, api_key, role, now_str),
+    )
+    await db.commit()
+    return {
+        "id": cursor.lastrowid,
+        "username": username,
+        "tenant_id": tenant_id,
+        "api_key": api_key,
+        "role": role,
+        "created_at": now_str,
+    }
+

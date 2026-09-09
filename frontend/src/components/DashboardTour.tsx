@@ -92,15 +92,16 @@ export default function DashboardTour() {
         left = rect.right + scrollX + 12;
       }
 
-      // Keep inside viewport limits
-      left = Math.max(10, Math.min(left, window.innerWidth - 330));
+      // Keep inside viewport limits with responsive width
+      const boxWidth = Math.min(300, window.innerWidth - 24);
+      left = Math.max(12, Math.min(left, window.innerWidth - boxWidth - 12));
       top = Math.max(10, top);
 
       setBoxStyle({
         position: "absolute",
         top: `${top}px`,
         left: `${left}px`,
-        width: "300px",
+        width: `${boxWidth}px`,
         zIndex: 1000,
       });
 
@@ -135,7 +136,7 @@ export default function DashboardTour() {
       {/* Floating Tutorial Help Button */}
       <button
         onClick={startTour}
-        className="fixed bottom-5 right-5 z-50 w-11 h-11 rounded-full border border-slate-200 bg-white text-blue-600 font-sans font-bold text-base flex items-center justify-center shadow-xl hover:bg-blue-50 hover:border-blue-300 transition-all duration-300"
+        className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 w-9 h-9 sm:w-11 sm:h-11 rounded-full border border-slate-200/90 bg-white/95 backdrop-blur-md text-[#2563EB] font-sans font-bold text-sm sm:text-base flex items-center justify-center shadow-lg hover:bg-blue-50 hover:border-blue-300 ring-1 ring-slate-900/5 transition-all duration-200 active:scale-95"
         title="Start Interactive Tutorial Tour"
       >
         ?

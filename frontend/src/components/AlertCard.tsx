@@ -62,7 +62,7 @@ export default function AlertCard({ alert, index }: AlertCardProps) {
       {/* Content */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between gap-2 mb-1">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 flex-wrap">
             <span
               className="text-xs font-bold tracking-wider font-mono uppercase"
               style={{ color: THREAT_COLORS[alert.threat_type] }}
@@ -82,14 +82,14 @@ export default function AlertCard({ alert, index }: AlertCardProps) {
 
           {/* Active Radar Ping Dot for HIGH Confidence */}
           {isHigh && (
-            <span className="ping-dot" title="Active High Severity Threat">
+            <span className="ping-dot shrink-0" title="Active High Severity Threat">
               <span className="ping-dot-ring bg-red-500" />
               <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
             </span>
           )}
         </div>
 
-        <p className="text-xs mb-2 leading-relaxed font-sans text-slate-800 font-medium">
+        <p className="text-xs mb-2 leading-relaxed font-sans text-slate-800 font-medium break-words">
           {alert.detail}
         </p>
 

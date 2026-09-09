@@ -11,7 +11,7 @@ Security: requires valid JWT or static INGEST_API_KEY.
 
 import asyncio
 import httpx
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Request, status
 
 from app.core.config import get_settings
 from app.core.dependencies import require_jwt_or_api_key
@@ -92,6 +92,7 @@ async def _process_single_event(event: LogEvent) -> AlertPayload | None:
 @router.post("/ingest", status_code=status.HTTP_200_OK)
 async def ingest(
     event: LogEvent,
+    request: Request,
     _auth: str = Depends(require_jwt_or_api_key),
 ) -> dict:
     """
@@ -102,6 +103,10 @@ async def ingest(
     3. Run through the rules engine.
     4. If an alert is generated, persist, broadcast to WS clients, and trigger webhooks.
     """
+    auth_tenant = getattr(request.state, "tenant_id", None)
+    if auth_tenant and (not event.tenant_id or event.tenant_id == "default_tenant"):
+        event.tenant_id = auth_tenant
+
     alert = await _process_single_event(event)
     return {
         "status": "ok",
@@ -113,16 +118,22 @@ async def ingest(
 @router.post("/ingest/batch", response_model=BatchIngestResponse, status_code=status.HTTP_200_OK)
 async def ingest_batch(
     body: BatchLogEventRequest,
+    request: Request,
     _auth: str = Depends(require_jwt_or_api_key),
 ) -> BatchIngestResponse:
     """
     Ingest a batch of up to 500 log events in a single HTTP request.
     Ideal for external log shippers (Vector, Fluent Bit, Promtail) and high-volume pipelines.
     """
+    auth_tenant = getattr(request.state, "tenant_id", None)
+    target_tenant = body.tenant_id
+    if auth_tenant and (not target_tenant or target_tenant == "default_tenant"):
+        target_tenant = auth_tenant
+
     alerts_count = 0
     for evt in body.events:
         if not evt.tenant_id or evt.tenant_id == "default_tenant":
-            evt.tenant_id = body.tenant_id
+            evt.tenant_id = target_tenant
         alert = await _process_single_event(evt)
         if alert:
             alerts_count += 1
@@ -132,3 +143,4 @@ async def ingest_batch(
         events_processed=len(body.events),
         alerts_generated=alerts_count,
     )
+
